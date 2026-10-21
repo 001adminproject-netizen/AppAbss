@@ -56,15 +56,16 @@
       overflow: hidden;
       margin-bottom: 15px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      border: 2px dashed #ccc;
     }
 
-    #video-element, #preview-img {
+    #preview-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1);
     }
 
     .clock-display {
@@ -178,19 +179,24 @@
         <div class="clock-display" id="current-time">00:00:00</div>
       </div>
 
-      <!-- KONTAINER KAMERA LIVE -->
+      <!-- KONTAINER AMBIL FOTO KAMERA NATIVE -->
       <div id="wrapper-camera-section">
-        <div class="camera-container shadow-sm">
-          <video id="video-element" autoplay playsinline muted></video>
-          <img id="preview-img" style="display: none;" alt="Preview Absen">
+        <div class="camera-container shadow-sm position-relative">
+          <img id="preview-img" class="d-none" alt="Preview Absen">
+          
+          <div id="placeholder-box" class="text-center text-muted p-3">
+            <i class="fa-solid fa-camera fa-3x mb-2 text-primary"></i>
+            <p class="mb-0 small fw-bold">Belum Ada Foto Terambil</p>
+            <small class="opacity-75">Klik tombol di bawah untuk membuka kamera HP</small>
+          </div>
         </div>
 
-        <!-- FALLBACK UPLOAD FOTO LIVE JIKA KAMERA WEB DI-BLOCK -->
-        <div id="fallback-camera-box" class="mb-3 d-none">
-          <label class="form-label fw-bold text-secondary small">Ambil Foto Selfie Langsung</label>
-          <input type="file" id="input-foto-file" class="form-control" accept="image/*" capture="user" onchange="previewFotoFromFile(event)">
-          <small class="text-muted">Gunakan tombol di atas untuk membuka kamera depan HP secara live.</small>
-        </div>
+        <!-- INPUT NATIVE CAMERA FILE -->
+        <input type="file" id="input-native-camera" class="d-none" accept="image/*" capture="user" onchange="previewFotoFromCamera(event)">
+        
+        <button type="button" class="btn btn-outline-primary w-100 py-2 fw-bold mb-3 rounded-3" onclick="openNativeCamera()">
+          <i class="fa-solid fa-camera-retro me-2"></i> Ambil Foto Kamera HP
+        </button>
       </div>
 
       <div class="mb-3">
@@ -209,7 +215,7 @@
       </div>
 
       <button id="btn-submit-absen" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm mb-4" onclick="processAbsen()">
-        <i class="fa-solid fa-camera me-2"></i> Kirim Absen
+        <i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen
       </button>
 
       <div class="border-top pt-3">
@@ -402,13 +408,11 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzoKwOWjgoovP-nQmVoN9BOHjOxqJ-UZCLwJUv3HQIcYTyUgqiN47yk4Vlb4sAWwI1uQw/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxhhQphwdx03BlHDPUbx6MsRrazimRy5KPtpiulFYw9-Koseok12xs1Aa2lbD1pZHHZVQ/exec";
 
   let currentUser = null;
   let targetLocation = null;
-  let videoStream = null;
   let capturedBase64 = "";
-  let isLiveStreamActive = false;
   
   let adminMap = null;
   let adminMarker = null;
@@ -518,60 +522,25 @@
     document.getElementById('view-user').classList.remove('d-none');
     document.getElementById('user-welcome').innerText = currentUser.nama;
     loadTodayAttendance();
-    startCamera();
     fetchLocationSettings();
   }
 
-  async function startCamera() {
-    const video = document.getElementById('video-element');
-    const previewImg = document.getElementById('preview-img');
-    const fallbackBox = document.getElementById('fallback-camera-box');
-
-    // Reset elemen preview
-    video.style.display = 'block';
-    previewImg.style.display = 'none';
-
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("MediaDevices tidak didukung");
-      }
-
-      videoStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false
-      });
-
-      video.srcObject = videoStream;
-      await video.play();
-      isLiveStreamActive = true;
-
-    } catch (err) {
-      console.warn("Live stream kamera terhalang:", err);
-      isLiveStreamActive = false;
-      video.style.display = 'none';
-      fallbackBox.classList.remove('d-none');
-    }
+  function openNativeCamera() {
+    document.getElementById('input-native-camera').click();
   }
 
-  // MENGHENTIKAN KAMERA LIVE SETELAH FOTO DIAMBIL
-  function stopCamera() {
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-      videoStream = null;
-    }
-    isLiveStreamActive = false;
-  }
-
-  function previewFotoFromFile(event) {
+  function previewFotoFromCamera(event) {
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = function(e) {
         capturedBase64 = e.target.result;
         const img = document.getElementById('preview-img');
+        const placeholder = document.getElementById('placeholder-box');
+        
         img.src = capturedBase64;
-        img.style.display = 'block';
-        document.getElementById('video-element').style.display = 'none';
+        img.classList.remove('d-none');
+        placeholder.classList.add('d-none');
       };
       reader.readAsDataURL(file);
     }
@@ -584,12 +553,8 @@
 
     if (tipe === 'IZIN' || tipe === 'SAKIT') {
       cameraSection.classList.add('d-none');
-      stopCamera();
     } else {
       cameraSection.classList.remove('d-none');
-      if (!isLiveStreamActive && !capturedBase64) {
-        startCamera();
-      }
     }
 
     if (tipe === 'PULANG') {
@@ -656,20 +621,20 @@
         if (!records || records.jamMasuk === '-') {
           alert("Anda belum melakukan Absen MASUK hari ini!");
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
           return;
         }
         if (records.jamPulang && records.jamPulang !== '-') {
           alert("Anda sudah melakukan Absen PULANG hari ini!");
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
           return;
         }
       } else if (tipe === 'MASUK') {
         if (records && records.jamMasuk && records.jamMasuk !== '-') {
           alert("Anda sudah melakukan Absen MASUK hari ini!");
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
           return;
         }
       }
@@ -678,7 +643,7 @@
         if (!navigator.geolocation) {
           alert("Browser Anda tidak mendukung GPS.");
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
           return;
         }
         navigator.geolocation.getCurrentPosition(
@@ -687,7 +652,7 @@
             if (dist > 100) {
               alert(`Posisi Anda terlalu jauh (${Math.round(dist)}m dari lokasi kantor). Maksimal radius 100m.`);
               btn.disabled = false;
-              btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+              btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
             } else {
               executeSubmitAbsen(tipe, document.getElementById('absen-kegiatan').value);
             }
@@ -695,7 +660,7 @@
           err => {
             alert("Gagal mendapatkan lokasi GPS. Pastikan izin GPS perangkat Anda aktif!");
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
           }
         );
       } else {
@@ -705,42 +670,12 @@
   }
 
   async function executeSubmitAbsen(tipe, kegiatan) {
-    let finalFotoBase64 = "";
-
-    if (tipe === 'MASUK' || tipe === 'PULANG') {
-      if (isLiveStreamActive) {
-        const video = document.getElementById('video-element');
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = video.videoWidth || 640;
-        tempCanvas.height = video.videoHeight || 480;
-        const ctx = tempCanvas.getContext('2d');
-        
-        ctx.translate(tempCanvas.width, 0);
-        ctx.scale(-1, 1);
-        
-        ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-        finalFotoBase64 = tempCanvas.toDataURL('image/jpeg', 0.8);
-        capturedBase64 = finalFotoBase64;
-
-        // TAMPILKAN HASIL SNAPSHOT FOTO STATIS & BERHENTIKAN KAMERA LIVE
-        const previewImg = document.getElementById('preview-img');
-        previewImg.src = finalFotoBase64;
-        previewImg.style.display = 'block';
-        video.style.display = 'none';
-
-        stopCamera(); // Menghentikan kamera live
-      } else {
-        finalFotoBase64 = capturedBase64;
-      }
-
-      if (!finalFotoBase64) {
-        alert("Harap ambil foto selfie secara live terlebih dahulu!");
-        const btn = document.getElementById('btn-submit-absen');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
-        startCamera(); // Restart kamera jika foto kosong
-        return;
-      }
+    if ((tipe === 'MASUK' || tipe === 'PULANG') && !capturedBase64) {
+      alert("Harap ambil foto selfie menggunakan kamera terlebih dahulu!");
+      const btn = document.getElementById('btn-submit-absen');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
+      return;
     }
 
     const btn = document.getElementById('btn-submit-absen');
@@ -752,24 +687,21 @@
       nama: currentUser.nama,
       tipe: tipe,
       kegiatan: kegiatan,
-      fotoDataUrl: finalFotoBase64
+      fotoDataUrl: capturedBase64
     };
 
     const res = await callAppsScript('submitAttendance', { payload });
     
-    btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen';
     btn.disabled = false;
     alert(res.message);
     
     if (res.success) {
       document.getElementById('absen-kegiatan').value = '';
       capturedBase64 = "";
+      document.getElementById('preview-img').classList.add('d-none');
+      document.getElementById('placeholder-box').classList.remove('d-none');
       loadTodayAttendance();
-    } else {
-      // Jika gagal, nyalakan kembali kamera live untuk mencoba ulang
-      if (tipe === 'MASUK' || tipe === 'PULANG') {
-        startCamera();
-      }
     }
   }
 
@@ -1024,7 +956,6 @@
   }
 
   function logout() {
-    stopCamera();
     currentUser = null;
     capturedBase64 = "";
 
