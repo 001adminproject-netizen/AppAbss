@@ -4,22 +4,20 @@
   <base target="_top">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aplikasi Absensi PKL</title>
+  <title>Aplikasi Absensi PKL Profesional</title>
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- LEAFLET CSS UNTUK MAP -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   
   <style>
     :root {
       --primary-color: #4e73df;
-      --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --bg-gradient: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
     }
 
     body {
-      background: #f3f4f6;
+      background: #f4f6f9;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       min-height: 100vh;
     }
@@ -36,24 +34,24 @@
       background: #ffffff;
       border: none;
       border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
       overflow: hidden;
-      max-width: 500px;
+      max-width: 480px;
       width: 100%;
     }
 
     .card-header-gradient {
       background: var(--bg-gradient);
       color: white;
-      padding: 30px 20px;
+      padding: 25px 20px;
       text-align: center;
     }
 
     .camera-container {
       position: relative;
       width: 100%;
-      height: 300px;
-      background-color: #000;
+      height: 280px;
+      background-color: #1a1a1a;
       border-radius: 15px;
       overflow: hidden;
       margin-bottom: 15px;
@@ -67,19 +65,19 @@
       height: 100%;
       object-fit: cover;
       transform: scaleX(-1);
-      -webkit-transform: scaleX(-1);
     }
 
     .clock-display {
       font-size: 1.8rem;
       font-weight: 700;
       color: #2c3e50;
+      letter-spacing: 1px;
     }
 
     #admin-map {
       height: 300px;
       width: 100%;
-      border-radius: 10px;
+      border-radius: 12px;
       margin-top: 10px;
     }
   </style>
@@ -88,36 +86,81 @@
 
 <div class="main-bg container">
 
-  <!-- 1. VIEW LOGIN -->
-  <div id="view-login" class="card-modern">
+  <!-- 1. VIEW LOGIN & REGISTER -->
+  <div id="view-auth" class="card-modern">
     <div class="card-header-gradient">
       <i class="fa-solid fa-user-check fa-3x mb-2"></i>
       <h3 class="fw-bold mb-0">Absensi PKL</h3>
-      <small class="opacity-75">Silakan masuk menggunakan akun Anda</small>
+      <small id="auth-subtitle" class="opacity-75">Silakan masuk ke akun Anda</small>
     </div>
+    
     <div class="p-4">
-      <div id="login-alert"></div>
-      <div class="mb-3">
-        <label class="form-label font-weight-bold text-secondary">Username / ID</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
-          <input type="text" id="login-username" class="form-control" placeholder="Masukkan ID/Username">
+      <div id="auth-alert"></div>
+
+      <!-- FORM LOGIN -->
+      <form id="form-login" onsubmit="event.preventDefault(); handleLogin();">
+        <div class="mb-3">
+          <label class="form-label fw-bold text-secondary small">Username / ID</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+            <input type="text" id="login-username" class="form-control" placeholder="Masukkan ID/Username" required>
+          </div>
         </div>
-      </div>
-      <div class="mb-4">
-        <label class="form-label font-weight-bold text-secondary">Password</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-          <input type="password" id="login-password" class="form-control" placeholder="Masukkan Password">
+        <div class="mb-4">
+          <label class="form-label fw-bold text-secondary small">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" id="login-password" class="form-control" placeholder="Masukkan Password" required>
+          </div>
         </div>
-      </div>
-      <button class="btn btn-primary w-100 py-2 fw-bold rounded-3 shadow-sm" id="btn-login" onclick="handleLogin()">
-        <i class="fa-solid fa-right-to-bracket me-2"></i> Masuk Akun
-      </button>
+        <button class="btn btn-primary w-100 py-2 fw-bold rounded-3 shadow-sm mb-3" id="btn-login" type="submit">
+          <i class="fa-solid fa-right-to-bracket me-2"></i> Masuk Akun
+        </button>
+        <div class="text-center">
+          <small class="text-muted">Belum punya akun? <a href="#" onclick="toggleAuthMode('register'); return false;" class="text-primary fw-bold text-decoration-none">Daftar Akun Baru</a></small>
+        </div>
+      </form>
+
+      <!-- FORM REGISTER -->
+      <form id="form-register" class="d-none" onsubmit="event.preventDefault(); handleRegister();">
+        <div class="mb-2">
+          <label class="form-label fw-bold text-secondary small">Nama Lengkap</label>
+          <input type="text" id="reg-nama" class="form-control" placeholder="Nama Lengkap" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-bold text-secondary small">Username</label>
+          <input type="text" id="reg-username" class="form-control" placeholder="Buat Username" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-bold text-secondary small">Password</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="Buat Password" required>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label class="form-label fw-bold text-secondary small">Mulai PKL</label>
+            <input type="date" id="reg-mulai" class="form-control" required>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-bold text-secondary small">Selesai PKL</label>
+            <input type="date" id="reg-selesai" class="form-control" required>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold text-secondary small">Target Total Hari Kerja</label>
+          <input type="number" id="reg-totalhari" class="form-control" value="22" required>
+        </div>
+        <button class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm mb-3" id="btn-register" type="submit">
+          <i class="fa-solid fa-user-plus me-2"></i> Kirim Pendaftaran
+        </button>
+        <div class="text-center">
+          <small class="text-muted">Sudah punya akun? <a href="#" onclick="toggleAuthMode('login'); return false;" class="text-primary fw-bold text-decoration-none">Kembali ke Login</a></small>
+        </div>
+      </form>
+
     </div>
   </div>
 
-  <!-- 2. VIEW USER / PKL -->
+  <!-- 2. VIEW USER / SISWA PKL -->
   <div id="view-user" class="card-modern d-none">
     <div class="card-header-gradient d-flex justify-content-between align-items-center px-4">
       <div class="text-start">
@@ -135,20 +178,24 @@
         <div class="clock-display" id="current-time">00:00:00</div>
       </div>
 
-      <div class="camera-container shadow-sm">
-        <video id="video-element" autoplay playsinline muted></video>
-        <img id="preview-img" style="display: none;" alt="Preview Absen">
-      </div>
+      <!-- KONTAINER KAMERA LIVE -->
+      <div id="wrapper-camera-section">
+        <div class="camera-container shadow-sm">
+          <video id="video-element" autoplay playsinline muted></video>
+          <img id="preview-img" style="display: none;" alt="Preview Absen">
+        </div>
 
-      <div id="fallback-camera-box" class="mb-3 d-none">
-        <label class="form-label fw-bold text-secondary">Ambil Foto Selfie</label>
-        <input type="file" id="input-foto-file" class="form-control" accept="image/*" capture="user" onchange="previewFotoFromFile(event)">
-        <small class="text-muted">Gunakan tombol di atas untuk membuka kamera HP Anda.</small>
+        <!-- TOMBOL AMBIL FOTO LIVE SECARA LANGSUNG DARI KAMERA HP -->
+        <div id="fallback-camera-box" class="mb-3 d-none">
+          <label class="form-label fw-bold text-secondary small">Ambil Foto Selfie Langsung</label>
+          <input type="file" id="input-foto-file" class="form-control" accept="image/*" capture="user" onchange="previewFotoFromFile(event)">
+          <small class="text-muted">Gunakan tombol di atas untuk membuka kamera depan HP secara live.</small>
+        </div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-bold text-secondary">Pilih Tipe Absen</label>
-        <select id="absen-tipe" class="form-select rounded-3" onchange="toggleKegiatan()">
+        <label class="form-label fw-bold text-secondary small">Pilih Tipe Absen</label>
+        <select id="absen-tipe" class="form-select rounded-3" onchange="handleAbsenTypeChange()">
           <option value="MASUK">MASUK</option>
           <option value="PULANG">PULANG</option>
           <option value="IZIN">IZIN</option>
@@ -157,8 +204,8 @@
       </div>
 
       <div id="group-kegiatan" class="mb-3 d-none">
-        <label class="form-label fw-bold text-secondary">Laporan Kegiatan Ringkas</label>
-        <textarea id="absen-kegiatan" class="form-control rounded-3" rows="2" placeholder="Catat ringkasan kegiatan Anda hari ini..."></textarea>
+        <label class="form-label fw-bold text-secondary small">Laporan Kegiatan Ringkas</label>
+        <textarea id="absen-kegiatan" class="form-control rounded-3" rows="2" placeholder="Tuliskan ringkasan kegiatan Anda hari ini..."></textarea>
       </div>
 
       <button id="btn-submit-absen" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm mb-4" onclick="processAbsen()">
@@ -167,7 +214,7 @@
 
       <div class="border-top pt-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold text-dark m-0"><i class="fa-regular fa-calendar-check text-primary me-2"></i>Waktu Absen Hari Ini</h6>
+          <h6 class="fw-bold text-dark m-0"><i class="fa-regular fa-calendar-check text-primary me-2"></i>Absen Hari Ini</h6>
           <button class="btn btn-sm btn-light border" onclick="loadTodayAttendance()" title="Refresh Data">
             <i class="fa-solid fa-rotate-right text-secondary"></i>
           </button>
@@ -184,9 +231,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
       <div>
         <h4 class="fw-bold m-0 text-primary"><i class="fa-solid fa-user-shield me-2"></i>Dashboard Admin</h4>
-        <small class="text-muted">Kelola Data Absensi, Persentase & Pengguna</small>
+        <small class="text-muted">Manajemen Rekap User Aktif, Approve Pendaftaran & Lokasi Absensi</small>
       </div>
-      <button class="btn btn-outline-danger btn-sm rounded-3" onclick="logout()">
+      <button class="btn btn-outline-danger btn-sm rounded-3 fw-bold" onclick="logout()">
         <i class="fa-solid fa-sign-out-alt me-1"></i> Logout
       </button>
     </div>
@@ -194,12 +241,17 @@
     <ul class="nav nav-pills mb-3" id="adminTab" role="tablist">
       <li class="nav-item">
         <button class="nav-link active rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-rekap" onclick="loadAdminDashboard()">
-          <i class="fa-solid fa-chart-pie me-1"></i> Rekap & Persentase
+          <i class="fa-solid fa-chart-pie me-1"></i> Rekap User Aktif
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-approve" onclick="loadPendingUsers()">
+          <i class="fa-solid fa-user-clock me-1"></i> Approve User <span id="badge-pending-count" class="badge bg-danger ms-1 d-none">0</span>
         </button>
       </li>
       <li class="nav-item">
         <button class="nav-link rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-user">
-          <i class="fa-solid fa-user-plus me-1"></i> Tambah User
+          <i class="fa-solid fa-user-plus me-1"></i> Tambah User Manual
         </button>
       </li>
       <li class="nav-item">
@@ -210,6 +262,7 @@
     </ul>
 
     <div class="tab-content pt-2">
+      <!-- TAB REKAP USER AKTIF -->
       <div class="tab-pane fade show active" id="tab-rekap">
         <div class="table-responsive">
           <table class="table table-hover align-middle border">
@@ -217,10 +270,10 @@
               <tr>
                 <th>Username / Nama</th>
                 <th>Periode PKL</th>
-                <th>Hadir / Total</th>
+                <th>Hadir / Target</th>
                 <th>Keterlambatan</th>
                 <th>Persentase</th>
-                <th>Detail Presensi</th>
+                <th>Detail User</th>
               </tr>
             </thead>
             <tbody id="table-rekap-body"></tbody>
@@ -228,51 +281,74 @@
         </div>
       </div>
 
+      <!-- TAB APPROVAL USER PENDING -->
+      <div class="tab-pane fade" id="tab-approve">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle border">
+            <thead class="table-light">
+              <tr>
+                <th>Username / Nama</th>
+                <th>Periode PKL</th>
+                <th>Target Hari</th>
+                <th>Aksi Persetujuan</th>
+              </tr>
+            </thead>
+            <tbody id="table-approve-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB TAMBAH USER MANUAL -->
       <div class="tab-pane fade" id="tab-user">
         <div class="row g-3" style="max-width: 600px;">
-          <div class="col-md-6"><label class="form-label">Username</label><input type="text" id="add-username" class="form-control"></div>
-          <div class="col-md-6"><label class="form-label">Password</label><input type="password" id="add-password" class="form-control"></div>
-          <div class="col-12"><label class="form-label">Nama Lengkap</label><input type="text" id="add-nama" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label small fw-bold">Username</label><input type="text" id="add-username" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label small fw-bold">Password</label><input type="password" id="add-password" class="form-control"></div>
+          <div class="col-12"><label class="form-label small fw-bold">Nama Lengkap</label><input type="text" id="add-nama" class="form-control"></div>
           <div class="col-md-6">
-            <label class="form-label">Role</label>
+            <label class="form-label small fw-bold">Role</label>
             <select id="add-role" class="form-select">
               <option value="user">User / PKL</option>
               <option value="admin">Admin</option>
             </select>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Akses Lokasi</label>
+            <label class="form-label small fw-bold">Akses Lokasi</label>
             <select id="add-bebas" class="form-select">
               <option value="false">Wajib Radius 100m</option>
               <option value="true">Bebas Lokasi</option>
             </select>
           </div>
-          <div class="col-md-6"><label class="form-label">Tanggal Mulai PKL</label><input type="date" id="add-mulai" class="form-control"></div>
-          <div class="col-md-6"><label class="form-label">Tanggal Selesai PKL</label><input type="date" id="add-selesai" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label small fw-bold">Tanggal Mulai PKL</label><input type="date" id="add-mulai" class="form-control"></div>
+          <div class="col-md-6"><label class="form-label small fw-bold">Tanggal Selesai PKL</label><input type="date" id="add-selesai" class="form-control"></div>
           
           <div class="col-12">
-            <label class="form-label fw-bold text-primary">Total Hari Kerja Target PKL</label>
+            <label class="form-label small fw-bold">Total Hari Kerja Target PKL</label>
             <input type="number" id="add-total-hari" class="form-control" placeholder="Contoh: 22" value="22">
-            <small class="text-muted">Jumlah hari kerja total yang harus dicapai user untuk target persentase 100%.</small>
           </div>
 
-          <div class="col-12"><button class="btn btn-primary fw-bold" onclick="handleAddUser()">Simpan User</button></div>
+          <div class="col-12">
+            <button id="btn-add-user" class="btn btn-primary fw-bold" onclick="handleAddUser()">
+              <i class="fa-solid fa-save me-1"></i> Simpan User
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- TAB PENGATURAN LOKASI DENGAN MAP -->
+      <!-- TAB PENGATURAN LOKASI -->
       <div class="tab-pane fade" id="tab-setting">
         <div class="row g-3" style="max-width: 700px;">
           <div class="col-12">
-            <small class="text-muted">Geser marker (penanda) pada peta atau klik pada lokasi kantor/instansi untuk menentukan titik pusat absensi radius 100 meter.</small>
+            <small class="text-muted">Geser penanda (marker) atau klik lokasi kantor pada peta untuk memperbarui koordinat radius absensi 100 meter.</small>
           </div>
-          <div class="col-md-6"><label class="form-label">Latitude Pusat</label><input type="text" id="set-lat" class="form-control" readonly></div>
-          <div class="col-md-6"><label class="form-label">Longitude Pusat</label><input type="text" id="set-lng" class="form-control" readonly></div>
+          <div class="col-md-6"><label class="form-label small fw-bold">Latitude Pusat</label><input type="text" id="set-lat" class="form-control" readonly></div>
+          <div class="col-md-6"><label class="form-label small fw-bold">Longitude Pusat</label><input type="text" id="set-lng" class="form-control" readonly></div>
           <div class="col-12">
             <div id="admin-map"></div>
           </div>
           <div class="col-12">
-            <button class="btn btn-success fw-bold w-100" onclick="handleUpdateLocation()">Perbarui Koordinat Peta</button>
+            <button id="btn-update-location" class="btn btn-success fw-bold w-100" onclick="handleUpdateLocation()">
+              <i class="fa-solid fa-map-pin me-1"></i> Perbarui Koordinat Peta
+            </button>
           </div>
         </div>
       </div>
@@ -281,12 +357,52 @@
 
 </div>
 
-<!-- JS BOOTSTRAP & LEAFLET MAP -->
+<!-- MODAL DETAIL USER & RIWAYAT ABSENSI -->
+<div class="modal fade" id="modalDetailUser" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold" id="modalDetailUserTitle"><i class="fa-solid fa-user-clock me-2"></i>Detail Riwayat Absensi</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle small border">
+            <thead class="table-light">
+              <tr>
+                <th>Tanggal</th>
+                <th>Masuk</th>
+                <th>Pulang</th>
+                <th>Status</th>
+                <th>Keterlambatan</th>
+                <th>Kegiatan</th>
+                <th>Foto Selfie</th>
+              </tr>
+            </thead>
+            <tbody id="table-detail-history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VIEWER FOTO -->
+<div class="modal fade" id="modalPhotoViewer" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center p-2">
+        <img id="img-viewer-src" src="" class="img-fluid rounded" alt="Foto Absen">
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzoKwOWjgoovP-nQmVoN9BOHjOxqJ-UZCLwJUv3HQIcYTyUgqiN47yk4Vlb4sAWwI1uQw/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfNTNvPMuvFbA41MepLf0SwiVXKqq1hr2L2HqegqAtvRCjSAe5eCflttSjz6tVQMXgNA/exec";
 
   let currentUser = null;
   let targetLocation = null;
@@ -331,15 +447,23 @@
     }
   }
 
+  function toggleAuthMode(mode) {
+    document.getElementById('auth-alert').innerHTML = '';
+    if (mode === 'register') {
+      document.getElementById('form-login').classList.add('d-none');
+      document.getElementById('form-register').classList.remove('d-none');
+      document.getElementById('auth-subtitle').innerText = 'Pendaftaran Akun PKL Baru';
+    } else {
+      document.getElementById('form-register').classList.add('d-none');
+      document.getElementById('form-login').classList.remove('d-none');
+      document.getElementById('auth-subtitle').innerText = 'Silakan masuk ke akun Anda';
+    }
+  }
+
   async function handleLogin() {
     const u = document.getElementById('login-username').value;
     const p = document.getElementById('login-password').value;
     const btn = document.getElementById('btn-login');
-
-    if (!u || !p) {
-      document.getElementById('login-alert').innerHTML = `<div class="alert alert-warning py-2 small">Username & Password wajib diisi!</div>`;
-      return;
-    }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Memproses...';
@@ -351,14 +475,42 @@
 
     if (res.success) {
       currentUser = res.user;
-      document.getElementById('view-login').classList.add('d-none');
+      document.getElementById('view-auth').classList.add('d-none');
       if (currentUser.role === 'admin') {
         showAdminView();
       } else {
         showUserView();
       }
     } else {
-      document.getElementById('login-alert').innerHTML = `<div class="alert alert-danger py-2 small">${res.message}</div>`;
+      document.getElementById('auth-alert').innerHTML = `<div class="alert alert-danger py-2 small">${res.message}</div>`;
+    }
+  }
+
+  async function handleRegister() {
+    const btn = document.getElementById('btn-register');
+    const userData = {
+      nama: document.getElementById('reg-nama').value,
+      username: document.getElementById('reg-username').value,
+      password: document.getElementById('reg-password').value,
+      tglMulai: document.getElementById('reg-mulai').value,
+      tglSelesai: document.getElementById('reg-selesai').value,
+      totalHari: document.getElementById('reg-totalhari').value
+    };
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Mengirim Pendaftaran...';
+
+    const res = await callAppsScript('register', { userData });
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-user-plus me-2"></i> Kirim Pendaftaran';
+
+    if (res.success) {
+      document.getElementById('auth-alert').innerHTML = `<div class="alert alert-success py-2 small">${res.message}</div>`;
+      toggleAuthMode('login');
+      document.getElementById('form-register').reset();
+    } else {
+      document.getElementById('auth-alert').innerHTML = `<div class="alert alert-danger py-2 small">${res.message}</div>`;
     }
   }
 
@@ -410,6 +562,24 @@
     }
   }
 
+  function handleAbsenTypeChange() {
+    const tipe = document.getElementById('absen-tipe').value;
+    const cameraSection = document.getElementById('wrapper-camera-section');
+    const groupKegiatan = document.getElementById('group-kegiatan');
+
+    if (tipe === 'IZIN' || tipe === 'SAKIT') {
+      cameraSection.classList.add('d-none');
+    } else {
+      cameraSection.classList.remove('d-none');
+    }
+
+    if (tipe === 'PULANG') {
+      groupKegiatan.classList.remove('d-none');
+    } else {
+      groupKegiatan.classList.add('d-none');
+    }
+  }
+
   async function loadTodayAttendance() {
     const container = document.getElementById('today-records-container');
     container.innerHTML = `<p class="text-muted small text-center"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat data...</p>`;
@@ -446,16 +616,6 @@
     `;
   }
 
-  function toggleKegiatan() {
-    const tipe = document.getElementById('absen-tipe').value;
-    const group = document.getElementById('group-kegiatan');
-    if (tipe === 'PULANG') {
-      group.classList.remove('d-none');
-    } else {
-      group.classList.add('d-none');
-    }
-  }
-
   function processAbsen() {
     const tipe = document.getElementById('absen-tipe').value;
     const username = currentUser ? currentUser.username : '';
@@ -466,30 +626,40 @@
       return;
     }
 
-    // Pengecekan status sebelum absen pulang untuk menghindari duplikasi/error
+    const btn = document.getElementById('btn-submit-absen');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Memproses...';
+
     callAppsScript('getTodayAttendance', { username: username }).then(res => {
       const records = res.records;
       
       if (tipe === 'PULANG') {
         if (!records || records.jamMasuk === '-') {
           alert("Anda belum melakukan Absen MASUK hari ini!");
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
           return;
         }
         if (records.jamPulang && records.jamPulang !== '-') {
           alert("Anda sudah melakukan Absen PULANG hari ini!");
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
           return;
         }
       } else if (tipe === 'MASUK') {
         if (records && records.jamMasuk && records.jamMasuk !== '-') {
           alert("Anda sudah melakukan Absen MASUK hari ini!");
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
           return;
         }
       }
 
-      // Validasi Lokasi GPS
       if (!currentUser.bebasLokasi && (tipe === 'MASUK' || tipe === 'PULANG')) {
         if (!navigator.geolocation) {
           alert("Browser Anda tidak mendukung GPS.");
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
           return;
         }
         navigator.geolocation.getCurrentPosition(
@@ -497,11 +667,17 @@
             const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, targetLocation.lat, targetLocation.lng);
             if (dist > 100) {
               alert(`Posisi Anda terlalu jauh (${Math.round(dist)}m dari lokasi kantor). Maksimal radius 100m.`);
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
             } else {
               executeSubmitAbsen(tipe, document.getElementById('absen-kegiatan').value);
             }
           },
-          err => alert("Gagal mendapatkan lokasi GPS. Pastikan izin GPS perangkat Anda aktif!")
+          err => {
+            alert("Gagal mendapatkan lokasi GPS. Pastikan izin GPS perangkat Anda aktif!");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+          }
         );
       } else {
         executeSubmitAbsen(tipe, document.getElementById('absen-kegiatan').value);
@@ -510,30 +686,37 @@
   }
 
   async function executeSubmitAbsen(tipe, kegiatan) {
-    let finalFotoBase64 = capturedBase64;
+    let finalFotoBase64 = "";
 
-    if (isLiveStreamActive) {
-      const video = document.getElementById('video-element');
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = video.videoWidth || 640;
-      tempCanvas.height = video.videoHeight || 480;
-      const ctx = tempCanvas.getContext('2d');
-      
-      ctx.translate(tempCanvas.width, 0);
-      ctx.scale(-1, 1);
-      
-      ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-      finalFotoBase64 = tempCanvas.toDataURL('image/jpeg', 0.8);
-    }
+    if (tipe === 'MASUK' || tipe === 'PULANG') {
+      finalFotoBase64 = capturedBase64;
 
-    if (!finalFotoBase64) {
-      alert("Harap ambil foto terlebih dahulu!");
-      return;
+      if (isLiveStreamActive) {
+        const video = document.getElementById('video-element');
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = video.videoWidth || 640;
+        tempCanvas.height = video.videoHeight || 480;
+        const ctx = tempCanvas.getContext('2d');
+        
+        ctx.translate(tempCanvas.width, 0);
+        ctx.scale(-1, 1);
+        
+        ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+        finalFotoBase64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+      }
+
+      if (!finalFotoBase64) {
+        alert("Harap ambil foto selfie secara live terlebih dahulu!");
+        const btn = document.getElementById('btn-submit-absen');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+        return;
+      }
     }
 
     const btn = document.getElementById('btn-submit-absen');
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Mengirim...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Mengirim Data...';
 
     const payload = {
       username: currentUser.username,
@@ -558,6 +741,7 @@
   function showAdminView() {
     document.getElementById('view-admin').classList.remove('d-none');
     loadAdminDashboard();
+    loadPendingUsers();
     fetchLocationSettings();
   }
 
@@ -613,14 +797,14 @@
 
   async function loadAdminDashboard() {
     const tbody = document.getElementById('table-rekap-body');
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat data rekapitulasi...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat rekapitulasi user aktif...</td></tr>';
 
     const res = await callAppsScript('getAdminDashboard');
     const data = res.data;
 
     tbody.innerHTML = '';
     if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada user aktif.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Belum ada user/siswa PKL aktif.</td></tr>';
       return;
     }
 
@@ -637,35 +821,125 @@
           <small class="text-muted">@${u.username}</small>
         </td>
         <td><small class="text-muted">${u.tglMulai} s/d ${u.tglSelesai}</small></td>
-        <td>
-          <b>${totalHadir}</b> / ${u.totalHariKerja} Hari
-        </td>
+        <td><b>${totalHadir}</b> / ${u.totalHariKerja} Hari</td>
         <td>
           <span class="badge ${u.summary.totalTelatMenit > 0 ? 'bg-danger' : 'bg-success'}">
             ${u.summary.totalTelatMenit > 0 ? u.summary.totalTelatMenit + ' Menit Telat' : 'Tepat Waktu'}
           </span>
         </td>
-        <td style="width: 180px;">
+        <td style="width: 150px;">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <small class="fw-bold">${u.persentase}%</small>
           </div>
-          <div class="progress" style="height: 10px;">
-            <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${u.persentase}%;" aria-valuenow="${u.persentase}" aria-valuemin="0" aria-valuemax="100"></div>
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${u.persentase}%;"></div>
           </div>
         </td>
         <td>
-          <small>
-            <span class="badge bg-primary">M: ${u.summary.masuk ?? 0}</span>
-            <span class="badge bg-warning text-dark">I: ${u.summary.izin ?? 0}</span>
-            <span class="badge bg-danger">S: ${u.summary.sakit ?? 0}</span>
-          </small>
+          <button class="btn btn-sm btn-outline-primary fw-bold" onclick="showUserDetailModal('${u.username}', '${u.nama}')">
+            <i class="fa-solid fa-eye me-1"></i> Detail
+          </button>
         </td>
       </tr>`;
       tbody.innerHTML += row;
     });
   }
 
+  async function loadPendingUsers() {
+    const tbody = document.getElementById('table-approve-body');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat antrean persetujuan...</td></tr>';
+
+    const res = await callAppsScript('getPendingUsers');
+    const data = res.data;
+
+    const badge = document.getElementById('badge-pending-count');
+    if (data && data.length > 0) {
+      badge.innerText = data.length;
+      badge.classList.remove('d-none');
+    } else {
+      badge.classList.add('d-none');
+    }
+
+    tbody.innerHTML = '';
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Tidak ada antrean pendaftaran user baru.</td></tr>';
+      return;
+    }
+
+    data.forEach(u => {
+      const row = `<tr>
+        <td>
+          <b>${u.nama}</b><br>
+          <small class="text-muted">@${u.username}</small>
+        </td>
+        <td><small class="text-muted">${u.tglMulai} s/d ${u.tglSelesai}</small></td>
+        <td>${u.totalHari} Hari</td>
+        <td>
+          <button class="btn btn-sm btn-success fw-bold me-1" onclick="handleApproveUser('${u.username}', 'active', this)">
+            <i class="fa-solid fa-check me-1"></i> Approve
+          </button>
+          <button class="btn btn-sm btn-danger fw-bold" onclick="handleApproveUser('${u.username}', 'rejected', this)">
+            <i class="fa-solid fa-xmark me-1"></i> Tolak
+          </button>
+        </td>
+      </tr>`;
+      tbody.innerHTML += row;
+    });
+  }
+
+  async function handleApproveUser(username, targetStatus, btnElement) {
+    btnElement.disabled = true;
+    btnElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+    const res = await callAppsScript('processUserApproval', { username, status: targetStatus });
+    alert(res.message);
+    loadPendingUsers();
+    loadAdminDashboard();
+  }
+
+  async function showUserDetailModal(username, nama) {
+    document.getElementById('modalDetailUserTitle').innerText = `Detail Riwayat: ${nama} (@${username})`;
+    const tbody = document.getElementById('table-detail-history-body');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat riwayat absensi...</td></tr>';
+
+    const modal = new bootstrap.Modal(document.getElementById('modalDetailUser'));
+    modal.show();
+
+    const res = await callAppsScript('getUserDetailHistory', { username });
+    const records = res.data;
+
+    tbody.innerHTML = '';
+    if (!records || records.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Belum ada riwayat absensi.</td></tr>';
+      return;
+    }
+
+    records.forEach(r => {
+      let fotoBtn = r.fotoUrl && r.fotoUrl.startsWith('http') 
+        ? `<button class="btn btn-xs btn-outline-info rounded-3" onclick="viewPhoto('${r.fotoUrl}')"><i class="fa-solid fa-image"></i> Lihat</button>` 
+        : '-';
+
+      const row = `<tr>
+        <td>${r.tanggal}</td>
+        <td>${r.jamMasuk}</td>
+        <td>${r.jamPulang}</td>
+        <td><span class="badge ${r.status === 'HADIR' ? 'bg-success' : 'bg-warning text-dark'}">${r.status}</span></td>
+        <td><small>${r.keterlambatan}</small></td>
+        <td><small>${r.kegiatan}</small></td>
+        <td>${fotoBtn}</td>
+      </tr>`;
+      tbody.innerHTML += row;
+    });
+  }
+
+  function viewPhoto(url) {
+    document.getElementById('img-viewer-src').src = url;
+    const modal = new bootstrap.Modal(document.getElementById('modalPhotoViewer'));
+    modal.show();
+  }
+
   async function handleAddUser() {
+    const btn = document.getElementById('btn-add-user');
     const userData = {
       username: document.getElementById('add-username').value,
       password: document.getElementById('add-password').value,
@@ -682,8 +956,15 @@
       return;
     }
 
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+
     const res = await callAppsScript('addUser', { userData });
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-save me-1"></i> Simpan User';
     alert(res.message);
+
     document.getElementById('add-username').value = '';
     document.getElementById('add-password').value = '';
     document.getElementById('add-nama').value = '';
@@ -692,10 +973,17 @@
   }
 
   async function handleUpdateLocation() {
+    const btn = document.getElementById('btn-update-location');
     const lat = document.getElementById('set-lat').value;
     const lng = document.getElementById('set-lng').value;
 
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Memperbarui...';
+
     const res = await callAppsScript('updateLocation', { lat, lng });
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-map-pin me-1"></i> Perbarui Koordinat Peta';
     alert(res.message);
     fetchLocationSettings();
   }
@@ -712,10 +1000,11 @@
     document.getElementById('view-user').classList.add('d-none');
     document.getElementById('view-admin').classList.add('d-none');
 
-    document.getElementById('view-login').classList.remove('d-none');
+    document.getElementById('view-auth').classList.remove('d-none');
+    toggleAuthMode('login');
     document.getElementById('login-username').value = '';
     document.getElementById('login-password').value = '';
-    document.getElementById('login-alert').innerHTML = '';
+    document.getElementById('auth-alert').innerHTML = '';
   }
 </script>
 
