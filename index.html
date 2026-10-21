@@ -185,7 +185,7 @@
           <img id="preview-img" style="display: none;" alt="Preview Absen">
         </div>
 
-        <!-- TOMBOL AMBIL FOTO LIVE SECARA LANGSUNG DARI KAMERA HP -->
+        <!-- FALLBACK UPLOAD FOTO LIVE JIKA KAMERA WEB DI-BLOCK -->
         <div id="fallback-camera-box" class="mb-3 d-none">
           <label class="form-label fw-bold text-secondary small">Ambil Foto Selfie Langsung</label>
           <input type="file" id="input-foto-file" class="form-control" accept="image/*" capture="user" onchange="previewFotoFromFile(event)">
@@ -402,7 +402,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfNTNvPMuvFbA41MepLf0SwiVXKqq1hr2L2HqegqAtvRCjSAe5eCflttSjz6tVQMXgNA/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzoKwOWjgoovP-nQmVoN9BOHjOxqJ-UZCLwJUv3HQIcYTyUgqiN47yk4Vlb4sAWwI1uQw/exec";
 
   let currentUser = null;
   let targetLocation = null;
@@ -524,7 +524,12 @@
 
   async function startCamera() {
     const video = document.getElementById('video-element');
+    const previewImg = document.getElementById('preview-img');
     const fallbackBox = document.getElementById('fallback-camera-box');
+
+    // Reset elemen preview
+    video.style.display = 'block';
+    previewImg.style.display = 'none';
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -548,6 +553,15 @@
     }
   }
 
+  // MENGHENTIKAN KAMERA LIVE SETELAH FOTO DIAMBIL
+  function stopCamera() {
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      videoStream = null;
+    }
+    isLiveStreamActive = false;
+  }
+
   function previewFotoFromFile(event) {
     const file = event.target.files[0];
     if (file) {
@@ -557,6 +571,7 @@
         const img = document.getElementById('preview-img');
         img.src = capturedBase64;
         img.style.display = 'block';
+        document.getElementById('video-element').style.display = 'none';
       };
       reader.readAsDataURL(file);
     }
@@ -569,8 +584,12 @@
 
     if (tipe === 'IZIN' || tipe === 'SAKIT') {
       cameraSection.classList.add('d-none');
+      stopCamera();
     } else {
       cameraSection.classList.remove('d-none');
+      if (!isLiveStreamActive && !capturedBase64) {
+        startCamera();
+      }
     }
 
     if (tipe === 'PULANG') {
@@ -689,8 +708,6 @@
     let finalFotoBase64 = "";
 
     if (tipe === 'MASUK' || tipe === 'PULANG') {
-      finalFotoBase64 = capturedBase64;
-
       if (isLiveStreamActive) {
         const video = document.getElementById('video-element');
         const tempCanvas = document.createElement('canvas');
@@ -703,6 +720,17 @@
         
         ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
         finalFotoBase64 = tempCanvas.toDataURL('image/jpeg', 0.8);
+        capturedBase64 = finalFotoBase64;
+
+        // TAMPILKAN HASIL SNAPSHOT FOTO STATIS & BERHENTIKAN KAMERA LIVE
+        const previewImg = document.getElementById('preview-img');
+        previewImg.src = finalFotoBase64;
+        previewImg.style.display = 'block';
+        video.style.display = 'none';
+
+        stopCamera(); // Menghentikan kamera live
+      } else {
+        finalFotoBase64 = capturedBase64;
       }
 
       if (!finalFotoBase64) {
@@ -710,6 +738,7 @@
         const btn = document.getElementById('btn-submit-absen');
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-camera me-2"></i> Kirim Absen';
+        startCamera(); // Restart kamera jika foto kosong
         return;
       }
     }
@@ -734,7 +763,13 @@
     
     if (res.success) {
       document.getElementById('absen-kegiatan').value = '';
+      capturedBase64 = "";
       loadTodayAttendance();
+    } else {
+      // Jika gagal, nyalakan kembali kamera live untuk mencoba ulang
+      if (tipe === 'MASUK' || tipe === 'PULANG') {
+        startCamera();
+      }
     }
   }
 
@@ -989,11 +1024,7 @@
   }
 
   function logout() {
-    if (videoStream) {
-      videoStream.getTracks().forEach(track => track.stop());
-      videoStream = null;
-    }
-    isLiveStreamActive = false;
+    stopCamera();
     currentUser = null;
     capturedBase64 = "";
 
