@@ -179,6 +179,10 @@
           <label class="form-label fw-bold text-secondary small">Password</label>
           <input type="password" id="reg-password" class="form-control" placeholder="Buat Password" required>
         </div>
+        <div class="mb-2">
+          <label class="form-label fw-bold text-secondary small">Jenis Jadwal PKL</label>
+          <select id="reg-jenis-pkl" class="form-select"><option value="5_HARI">5 Hari PKL (Senin-Jumat, libur tanggal merah)</option><option value="7_HARI">7 Hari PKL (termasuk Sabtu, Minggu, dan tanggal merah)</option></select>
+        </div>
         <div class="row g-2 mb-2">
           <div class="col-6">
             <label class="form-label fw-bold text-secondary small">Mulai PKL</label>
@@ -222,6 +226,9 @@
         <button class="nav-link active small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-absen">
           <i class="fa-solid fa-clipboard-user me-1"></i> Form Absensi
         </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-riwayat" onclick="loadMyAttendanceHistory()"><i class="fa-solid fa-clock-rotate-left me-1"></i> Riwayat Absen</button>
       </li>
       <li class="nav-item">
         <button class="nav-link small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-jadwal" onclick="loadMySchedule()">
@@ -311,6 +318,12 @@
         </div>
       </div>
 
+      <!-- TAB RIWAYAT ABSENSI PER USER -->
+      <div class="tab-pane fade" id="user-tab-riwayat">
+        <div class="d-flex justify-content-between align-items-center mb-3"><h6 class="fw-bold m-0">Riwayat Absensi Saya</h6><button class="btn btn-sm btn-outline-primary" onclick="loadMyAttendanceHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button></div>
+        <div id="my-attendance-summary" class="small text-muted mb-2"></div>
+        <div class="table-responsive" style="max-height:380px"><table class="table table-sm table-striped table-hover align-middle border"><thead class="table-light sticky-top"><tr><th>Tanggal</th><th>Masuk</th><th>Pulang</th><th>Status</th><th>Kegiatan/Keterangan</th><th>Telat</th></tr></thead><tbody id="table-my-attendance-body"><tr><td colspan="6" class="text-center text-muted">Memuat riwayat...</td></tr></tbody></table></div>
+      </div>
       <!-- TAB 2: JADWAL SAYA (USER) -->
       <div class="tab-pane fade" id="user-tab-jadwal">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -655,6 +668,10 @@
             </select>
           </div>
           <div class="col-md-6">
+            <label class="form-label small fw-bold">Jenis Jadwal PKL</label>
+            <select id="add-jenis-pkl" class="form-select"><option value="5_HARI">5 Hari PKL</option><option value="7_HARI">7 Hari PKL</option></select>
+          </div>
+          <div class="col-md-6">
             <label class="form-label small fw-bold">Akses Lokasi</label>
             <select id="add-bebas" class="form-select">
               <option value="false">Wajib Radius 100m (Shift Pagi)</option>
@@ -846,7 +863,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxe46yiqCxzNGeHdZ5acBGb1HtVlzPodB6v8Xb--I3q0ywt0arw59DzQmJsWjSnhgepFw/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfBM0RYlkcnovG1DxEiQwGaM6QI7DIsfLcrm-BKhPe4ZdCR5wKLcFC54el68e9J1aEdQ/exec";
 
   const HOLIDAYS_LIST = [
     "2026-01-01", "2026-01-16", "2026-02-16", "2026-02-17", "2026-03-18", 
@@ -938,16 +955,47 @@
     return R * c;
   }
 
+  // API bridge untuk frontend GitHub Pages -> Google Apps Script Web App.
+  // Jangan tambahkan header application/json: itu dapat memicu CORS preflight.
+  // Body dikirim sebagai text/plain berisi JSON; doPost(e) tetap membaca e.postData.contents.
   async function callAppsScript(action, payload = {}) {
+    if (!WEB_APP_URL || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(WEB_APP_URL)) {
+      return { success: false, message: 'URL backend Apps Script belum benar. Periksa WEB_APP_URL di index.html.' };
+    }
+
     try {
       const response = await fetch(WEB_APP_URL, {
         method: 'POST',
-        body: JSON.stringify({ action: action, ...payload })
+        mode: 'cors',
+        credentials: 'omit',
+        redirect: 'follow',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify({ action, ...payload })
       });
-      return await response.json();
+
+      const responseText = await response.text();
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (_) {
+        console.error('Respons backend bukan JSON:', responseText.slice(0, 300));
+        return {
+          success: false,
+          message: 'Backend tidak mengirim JSON. Pastikan URL /exec benar dan Web App sudah di-deploy dengan akses yang sesuai.'
+        };
+      }
+
+      if (!response.ok) {
+        return { success: false, message: result.message || `Server merespons HTTP ${response.status}.` };
+      }
+      return result;
     } catch (error) {
-      console.error("API Error:", error);
-      return { success: false, message: 'Gagal terhubung ke server database.' };
+      console.error('API Error:', error);
+      return {
+        success: false,
+        message: 'Gagal membaca respons backend. Periksa URL /exec, izin deployment, dan Console browser. Jika Console menampilkan CORS, Apps Script tidak mengizinkan respons lintas origin; perubahan frontend saja tidak dapat menambahkan header CORS.'
+      };
     }
   }
 
@@ -992,6 +1040,7 @@
       password: document.getElementById('reg-password').value,
       tglMulai: document.getElementById('reg-mulai').value,
       tglSelesai: document.getElementById('reg-selesai').value,
+      jenisPKL: document.getElementById('reg-jenis-pkl').value,
       totalHari: document.getElementById('reg-totalhari').value
     };
 
@@ -1014,6 +1063,20 @@
     loadTodayAttendance();
     fetchLocationSettings();
     handleAbsenTypeChange();
+  }
+
+  async function loadMyAttendanceHistory() {
+    const tbody = document.getElementById('table-my-attendance-body');
+    const summary = document.getElementById('my-attendance-summary');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Memuat riwayat absensi...</td></tr>';
+    const res = await callAppsScript('getMyAttendanceHistory', { username: currentUser.username });
+    const rows = res && res.success ? (res.data || []) : [];
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada riwayat absensi.</td></tr>'; summary.textContent = ''; return; }
+    const hadir = rows.filter(r => ['HADIR','MASUK'].includes(String(r.status).toUpperCase())).length;
+    const izin = rows.filter(r => String(r.status).toUpperCase() === 'IZIN').length;
+    const sakit = rows.filter(r => String(r.status).toUpperCase() === 'SAKIT').length;
+    summary.textContent = `Total catatan: ${rows.length} • Hadir: ${hadir} • Izin: ${izin} • Sakit: ${sakit}`;
+    tbody.innerHTML = rows.map(r => `<tr><td>${r.tanggal || '-'}</td><td>${r.jamMasuk || '-'}</td><td>${r.jamPulang || '-'}</td><td><span class="badge ${String(r.status).toUpperCase()==='HADIR'?'bg-success':String(r.status).toUpperCase()==='IZIN'?'bg-warning text-dark':String(r.status).toUpperCase()==='SAKIT'?'bg-danger':'bg-secondary'}">${r.status || '-'}</span></td><td>${r.kegiatan || '-'}</td><td>${r.keterlambatan || '-'}</td></tr>`).join('');
   }
 
   async function loadMySchedule() {
@@ -1882,6 +1945,7 @@
       password: document.getElementById('add-password').value,
       nama: document.getElementById('add-nama').value,
       role: document.getElementById('add-role').value,
+      jenisPKL: document.getElementById('add-jenis-pkl').value,
       bebasLokasi: document.getElementById('add-bebas').value === 'true',
       tglMulai: document.getElementById('add-mulai').value,
       tglSelesai: document.getElementById('add-selesai').value,
