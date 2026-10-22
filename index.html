@@ -20,6 +20,7 @@
       background: #f4f6f9;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       min-height: 100vh;
+      color: #333;
     }
 
     .main-bg {
@@ -34,32 +35,32 @@
       background: #ffffff;
       border: none;
       border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
       overflow: hidden;
-      max-width: 500px;
+      max-width: 520px;
       width: 100%;
     }
 
     .card-header-gradient {
       background: var(--bg-gradient);
       color: white;
-      padding: 25px 20px;
+      padding: 22px 20px;
       text-align: center;
     }
 
     .camera-container {
       position: relative;
       width: 100%;
-      height: 250px;
+      height: 240px;
       background-color: #1a1a1a;
-      border-radius: 15px;
+      border-radius: 14px;
       overflow: hidden;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      border: 2px dashed #ccc;
+      border: 2px dashed #ddd;
     }
 
     #preview-img {
@@ -69,7 +70,7 @@
     }
 
     .clock-display {
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 700;
       color: #1e3c72;
       letter-spacing: 1px;
@@ -82,21 +83,20 @@
       margin-top: 10px;
     }
 
-    /* OVERLAY LOADING SPINNER */
     #loading-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.55);
+      background: rgba(0, 0, 0, 0.5);
       z-index: 9999;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       color: white;
-      backdrop-filter: blur(3px);
+      backdrop-filter: blur(2px);
     }
 
     @media print {
@@ -120,9 +120,9 @@
 </head>
 <body>
 
-<!-- GLOBAL LOADING OVERLAY -->
+<!-- INDIKATOR LOADING / PROSES BERLANGSUNG -->
 <div id="loading-overlay" class="d-none">
-  <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+  <div class="spinner-border text-light" style="width: 2.5rem; height: 2.5rem;" role="status">
     <span class="visually-hidden">Loading...</span>
   </div>
   <h6 class="mt-3 fw-bold" id="loading-text">Memproses data...</h6>
@@ -146,14 +146,14 @@
         <div class="mb-3">
           <label class="form-label fw-bold text-secondary small">Username / ID</label>
           <div class="input-group">
-            <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+            <span class="input-group-text bg-light"><i class="fa-solid fa-user text-muted"></i></span>
             <input type="text" id="login-username" class="form-control" placeholder="Masukkan ID/Username" required>
           </div>
         </div>
         <div class="mb-4">
           <label class="form-label fw-bold text-secondary small">Password</label>
           <div class="input-group">
-            <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+            <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
             <input type="password" id="login-password" class="form-control" placeholder="Masukkan Password" required>
           </div>
         </div>
@@ -205,7 +205,7 @@
   </div>
 
   <!-- 2. VIEW USER / SISWA PKL -->
-  <div id="view-user" class="card-modern d-none">
+  <div id="view-user" class="card-modern d-none" style="max-width: 600px;">
     <div class="card-header-gradient d-flex justify-content-between align-items-center px-4">
       <div class="text-start">
         <h5 id="user-welcome" class="fw-bold m-0"></h5>
@@ -216,81 +216,120 @@
       </button>
     </div>
 
-    <div class="p-4">
-      <div class="text-center mb-3">
-        <div class="text-muted small fw-bold" id="current-date">Hari Ini</div>
-        <div class="clock-display" id="current-time">00:00:00</div>
-      </div>
+    <!-- NAV TABS USER -->
+    <ul class="nav nav-tabs nav-fill bg-light px-2 pt-2 border-bottom" id="userTab" role="tablist">
+      <li class="nav-item">
+        <button class="nav-link active small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-absen">
+          <i class="fa-solid fa-clipboard-user me-1"></i> Form Absensi
+        </button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-jadwal" onclick="loadMySchedule()">
+          <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Saya
+        </button>
+      </li>
+    </ul>
 
-      <div class="alert alert-info py-2 px-3 mb-3 small border-0 shadow-sm rounded-3">
-        <i class="fa-solid fa-circle-info me-1 text-primary"></i> <b>Petunjuk Shift & Validasi:</b>
-        <ul class="mb-0 ps-3 mt-1">
-          <li><b>Shift Pagi:</b> Jam 08.15 | <u>Wajib Radius 100m Kantor</u>.</li>
-          <li><b>Shift Siang:</b> Jam 12.12 | <u>Bebas Radius</u>.</li>
-          <li><i>Catatan: Absen wajib sesuai dengan jadwal hari ini yang diatur oleh Admin.</i></li>
-        </ul>
-      </div>
-
-      <div class="row g-2 mb-3">
-        <div class="col-6">
-          <label class="form-label fw-bold text-secondary small">Pilih Shift</label>
-          <select id="absen-shift" class="form-select rounded-3" onchange="handleShiftChange()">
-            <option value="PAGI">Shift Pagi (08:15)</option>
-            <option value="SIANG">Shift Siang (12:12)</option>
-          </select>
+    <div class="tab-content p-4">
+      <!-- TAB 1: FORM ABSENSI -->
+      <div class="tab-pane fade show active" id="user-tab-absen">
+        <div class="text-center mb-3">
+          <div class="text-muted small fw-bold" id="current-date">Hari Ini</div>
+          <div class="clock-display" id="current-time">00:00:00</div>
         </div>
-        <div class="col-6">
-          <label class="form-label fw-bold text-secondary small">Tipe Absen</label>
-          <select id="absen-tipe" class="form-select rounded-3" onchange="handleAbsenTypeChange()">
-            <option value="MASUK">MASUK (Hadir)</option>
-            <option value="PULANG">PULANG (Hadir)</option>
-            <option value="IZIN">IZIN</option>
-            <option value="SAKIT">SAKIT</option>
-          </select>
-        </div>
-      </div>
 
-      <div id="wrapper-camera-section">
-        <div class="camera-container shadow-sm position-relative">
-          <img id="preview-img" class="d-none" alt="Preview Absen">
-          
-          <div id="placeholder-box" class="text-center text-muted p-3">
-            <i class="fa-solid fa-camera fa-3x mb-2 text-primary"></i>
-            <p class="mb-0 small fw-bold">Belum Ada Foto Terambil</p>
-            <small class="opacity-75">Ambil foto selfie sebelum kirim absen</small>
+        <div class="alert alert-info py-2 px-3 mb-3 small border-0 shadow-sm rounded-3">
+          <i class="fa-solid fa-circle-info me-1 text-primary"></i> <b>Ketentuan Shift:</b>
+          <ul class="mb-0 ps-3 mt-1">
+            <li><b>Shift Pagi (08:15):</b> Wajib Radius 100m Kantor.</li>
+            <li><b>Shift Siang (12:15):</b> Bebas Radius.</li>
+            <li><i>Pastikan absen sesuai dengan jadwal hari ini.</i></li>
+          </ul>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label fw-bold text-secondary small">Pilih Shift</label>
+            <select id="absen-shift" class="form-select rounded-3" onchange="handleShiftChange()">
+              <option value="PAGI">Shift Pagi (08:15)</option>
+              <option value="SIANG">Shift Siang (12:15)</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label fw-bold text-secondary small">Tipe Absen</label>
+            <select id="absen-tipe" class="form-select rounded-3" onchange="handleAbsenTypeChange()">
+              <option value="MASUK">MASUK (Hadir)</option>
+              <option value="PULANG">PULANG (Hadir)</option>
+              <option value="IZIN">IZIN</option>
+              <option value="SAKIT">SAKIT</option>
+            </select>
           </div>
         </div>
 
-        <input type="file" id="input-native-camera" class="d-none" accept="image/*" capture="user" onchange="previewFotoFromCamera(event)">
-        
-        <button type="button" class="btn btn-outline-primary w-100 py-2 fw-bold mb-3 rounded-3" onclick="openNativeCamera()">
-          <i class="fa-solid fa-camera-retro me-2"></i> Ambil Foto Selfie
-        </button>
-      </div>
+        <div id="wrapper-camera-section">
+          <div class="camera-container shadow-sm position-relative">
+            <img id="preview-img" class="d-none" alt="Preview Absen">
+            
+            <div id="placeholder-box" class="text-center text-muted p-3">
+              <i class="fa-solid fa-camera fa-3x mb-2 text-primary"></i>
+              <p class="mb-0 small fw-bold">Belum Ada Foto Terambil</p>
+              <small class="opacity-75">Ambil foto selfie sebelum kirim absen</small>
+            </div>
+          </div>
 
-      <div id="group-kegiatan" class="mb-3 d-none">
-        <label class="form-label fw-bold text-secondary small">Laporan Kegiatan Ringkas</label>
-        <textarea id="absen-kegiatan" class="form-control rounded-3" rows="2" placeholder="Tuliskan ringkasan kegiatan Anda hari ini..."></textarea>
-      </div>
-
-      <div id="group-keterangan" class="mb-3 d-none">
-        <label class="form-label fw-bold text-secondary small">Keterangan / Alasan <span class="text-danger">*</span></label>
-        <textarea id="absen-keterangan" class="form-control rounded-3" rows="2" placeholder="Tuliskan keterangan/alasan izin atau sakit..."></textarea>
-      </div>
-
-      <button id="btn-submit-absen" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm mb-4" onclick="processAbsen()">
-        <i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen Sekarang
-      </button>
-
-      <div class="border-top pt-3">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold text-dark m-0"><i class="fa-regular fa-calendar-check text-primary me-2"></i>Absen Hari Ini</h6>
-          <button class="btn btn-sm btn-light border" onclick="loadTodayAttendance()" title="Refresh Data">
-            <i class="fa-solid fa-rotate-right text-secondary"></i>
+          <input type="file" id="input-native-camera" class="d-none" accept="image/*" capture="user" onchange="previewFotoFromCamera(event)">
+          
+          <button type="button" class="btn btn-outline-primary w-100 py-2 fw-bold mb-3 rounded-3" onclick="openNativeCamera()">
+            <i class="fa-solid fa-camera-retro me-2"></i> Ambil Foto Selfie
           </button>
         </div>
-        <div id="today-records-container">
-          <p class="text-muted small text-center">Belum ada catatan absen hari ini.</p>
+
+        <div id="group-kegiatan" class="mb-3 d-none">
+          <label class="form-label fw-bold text-secondary small">Laporan Kegiatan Ringkas</label>
+          <textarea id="absen-kegiatan" class="form-control rounded-3" rows="2" placeholder="Tuliskan ringkasan kegiatan Anda hari ini..."></textarea>
+        </div>
+
+        <div id="group-keterangan" class="mb-3 d-none">
+          <label class="form-label fw-bold text-secondary small">Keterangan / Alasan <span class="text-danger">*</span></label>
+          <textarea id="absen-keterangan" class="form-control rounded-3" rows="2" placeholder="Tuliskan keterangan/alasan izin atau sakit..."></textarea>
+        </div>
+
+        <button id="btn-submit-absen" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm mb-4" onclick="processAbsen()">
+          <i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen Sekarang
+        </button>
+
+        <div class="border-top pt-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-dark m-0"><i class="fa-regular fa-calendar-check text-primary me-2"></i>Absen Hari Ini</h6>
+            <button class="btn btn-sm btn-light border" onclick="loadTodayAttendance()" title="Refresh Data">
+              <i class="fa-solid fa-rotate-right text-secondary"></i>
+            </button>
+          </div>
+          <div id="today-records-container">
+            <p class="text-muted small text-center">Belum ada catatan absen hari ini.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: JADWAL SAYA (USER) -->
+      <div class="tab-pane fade" id="user-tab-jadwal">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold text-dark m-0"><i class="fa-solid fa-calendar-days text-primary me-2"></i>Daftar Jadwal Shift Saya</h6>
+          <button class="btn btn-sm btn-outline-primary" onclick="loadMySchedule()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+        <div class="table-responsive" style="max-height: 380px;">
+          <table class="table table-striped table-hover align-middle small border">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th>Tanggal</th>
+                <th>Shift</th>
+                <th>Catatan / Tugas</th>
+              </tr>
+            </thead>
+            <tbody id="table-my-schedule-body">
+              <tr><td colspan="3" class="text-center text-muted">Memuat jadwal Anda...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -379,7 +418,7 @@
         </ul>
 
         <div class="tab-content">
-          <!-- Sub 1: Manual & Random Generator dengan Pilihan Shift -->
+          <!-- Sub 1: Manual & Random Generator dengan Kuota Shift 1 & 2 -->
           <div class="tab-pane fade show active" id="sub-buat-manual">
             <div class="row g-4">
               <!-- Form Manual -->
@@ -397,7 +436,7 @@
                   <label class="form-label small fw-bold">Pilih Shift</label>
                   <select id="schedule-shift" class="form-select form-select-sm">
                     <option value="PAGI">Shift Pagi (08.15 - 16.00)</option>
-                    <option value="SIANG">Shift Siang (12.12 - 20.00)</option>
+                    <option value="SIANG">Shift Siang (12.15 - 20.00)</option>
                   </select>
                 </div>
                 <div class="mb-3">
@@ -409,33 +448,55 @@
                 </button>
               </div>
 
-              <!-- Form Random Generator dengan Pilihan Shift Target -->
+              <!-- Form Random Generator dengan Kuota Shift 1 & 2 -->
               <div class="col-md-6">
-                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-shuffle text-success me-2"></i>Generate Random Otomatis</h6>
-                <div class="mb-2">
-                  <label class="form-label small fw-bold">Tanggal Mulai</label>
-                  <input type="date" id="gen-start-date" class="form-control form-control-sm">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-wand-magic-sparkles text-success me-2"></i>Generate Jadwal Random Fleksibel</h6>
+                <div class="row g-2 mb-2">
+                  <div class="col-6">
+                    <label class="form-label small fw-bold">Tanggal Mulai</label>
+                    <input type="date" id="gen-start-date" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-bold">Tanggal Selesai</label>
+                    <input type="date" id="gen-end-date" class="form-control form-control-sm">
+                  </div>
                 </div>
-                <div class="mb-2">
-                  <label class="form-label small fw-bold">Tanggal Selesai</label>
-                  <input type="date" id="gen-end-date" class="form-control form-control-sm">
+
+                <div class="card p-2 bg-light border-0 mb-2">
+                  <small class="fw-bold text-secondary mb-1"><i class="fa-solid fa-users-gear me-1"></i>Atur Kuota Orang per Hari:</small>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small text-muted m-0">Shift 1 - Pagi (08:15)</label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" id="gen-shift1-quota" class="form-control" value="2" min="0" placeholder="Jumlah">
+                        <span class="input-group-text">Orang</span>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small text-muted m-0">Shift 2 - Siang (12:15)</label>
+                      <div class="input-group input-group-sm">
+                        <input type="number" id="gen-shift2-quota" class="form-control" value="2" min="0" placeholder="Jumlah">
+                        <span class="input-group-text">Orang</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
                 <div class="mb-2">
-                  <label class="form-label small fw-bold">Pilihan Shift untuk Generate</label>
-                  <select id="gen-shift-mode" class="form-select form-select-sm">
-                    <option value="BOTH">Acak Kedua Shift (Pagi & Siang)</option>
-                    <option value="PAGI">Khusus Shift Pagi Saja</option>
-                    <option value="SIANG">Khusus Shift Siang Saja</option>
-                  </select>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label small fw-bold">Pilih User (Bisa Banyak / Semua)</label>
-                  <div id="gen-user-checkboxes" class="border p-2 rounded bg-light" style="max-height: 90px; overflow-y: auto;">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label small fw-bold m-0">Pilih User Yang Ditugaskan</label>
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="toggleAllUsers(true)">Pilih Semua</button>
+                      <button type="button" class="btn btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="toggleAllUsers(false)">Hapus Semua</button>
+                    </div>
+                  </div>
+                  <div id="gen-user-checkboxes" class="border p-2 rounded bg-light" style="max-height: 100px; overflow-y: auto;">
                     <!-- Diisi via Javascript -->
                   </div>
                 </div>
-                <button class="btn btn-success btn-sm fw-bold w-100" onclick="handleGenerateRandomSchedule()">
-                  <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate Jadwal Random
+
+                <button class="btn btn-success btn-sm fw-bold w-100 mt-2" onclick="handleGenerateRandomSchedule()">
+                  <i class="fa-solid fa-shuffle me-1"></i> Generate & Distribusikan Shift
                 </button>
               </div>
             </div>
@@ -462,25 +523,28 @@
             </div>
           </div>
 
-          <!-- Sub 3: Lihat & Kelola Daftar Jadwal (Edit/Hapus) -->
+          <!-- Sub 3: Lihat & Kelola Daftar Jadwal -->
           <div class="tab-pane fade" id="sub-list-jadwal">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h6 class="fw-bold text-dark m-0">Daftar Seluruh Jadwal Shift Terdaftar</h6>
-              <button class="btn btn-sm btn-light border" onclick="loadAllSchedules()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+              <div class="d-flex gap-2">
+                <input type="text" id="filter-sch-search" class="form-control form-control-sm" placeholder="Cari nama/tanggal..." onkeyup="filterAdminSchedules()">
+                <button class="btn btn-sm btn-light border" onclick="loadAllSchedules()"><i class="fa-solid fa-rotate-right"></i></button>
+              </div>
             </div>
-            <div class="table-responsive" style="max-height: 350px;">
+            <div class="table-responsive" style="max-height: 380px;">
               <table class="table table-striped table-hover align-middle small border">
                 <thead class="table-light sticky-top">
                   <tr>
-                    <th>Tanggal</th>
-                    <th>Username / Nama</th>
+                    <th>Tanggal Kerja</th>
+                    <th>Nama / Username</th>
                     <th>Shift</th>
-                    <th>Catatan</th>
-                    <th>Aksi</th>
+                    <th>Catatan / Tugas</th>
+                    <th class="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody id="table-all-schedules-body">
-                  <tr><td colspan="5" class="text-center text-muted">Klik refresh atau buka tab ini untuk memuat data.</td></tr>
+                  <tr><td colspan="5" class="text-center text-muted">Memuat daftar jadwal...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -721,7 +785,7 @@
             <label class="form-label small fw-bold">Shift</label>
             <select id="edit-sch-shift" class="form-select">
               <option value="PAGI">Shift Pagi (08.15 - 16.00)</option>
-              <option value="SIANG">Shift Siang (12.12 - 20.00)</option>
+              <option value="SIANG">Shift Siang (12.15 - 20.00)</option>
             </select>
           </div>
           <div class="mb-3">
@@ -782,23 +846,18 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwSz0DjQ5hSLaXGVyDqUYpvXGV2itzWuk5QJJ-hfC4vwyXEZ7ZtYs3wsh6-1EmV0px7Qw/exec";
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxe46yiqCxzNGeHdZ5acBGb1HtVlzPodB6v8Xb--I3q0ywt0arw59DzQmJsWjSnhgepFw/exec";
 
   const HOLIDAYS_LIST = [
-    // 2026
     "2026-01-01", "2026-01-16", "2026-02-16", "2026-02-17", "2026-03-18", 
     "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", 
     "2026-03-24", "2026-04-03", "2026-04-05", "2026-05-01", "2026-05-14", 
     "2026-05-15", "2026-05-27", "2026-05-28", "2026-05-31", "2026-06-01", 
     "2026-06-16", "2026-08-17", "2026-08-25", "2026-12-24", "2026-12-25",
-
-    // 2027
     "2027-01-01", "2027-01-05", "2027-02-05", "2027-02-06", "2027-03-08", "2027-03-09", 
     "2027-03-10", "2027-03-11", "2027-03-12", "2027-03-15", "2027-03-25", "2027-03-28", 
     "2027-05-01", "2027-05-06", "2027-05-17", "2027-05-18", "2027-05-19", "2027-05-20", 
     "2027-06-01", "2027-06-06", "2027-08-15", "2027-08-17", "2027-12-24", "2027-12-25", "2027-12-26",
-
-    // 2028
     "2028-01-01", "2028-01-26", "2028-04-14", "2028-05-01", "2028-05-25", 
     "2028-06-01", "2028-08-17", "2028-12-14", "2028-12-25"
   ];
@@ -957,6 +1016,31 @@
     handleAbsenTypeChange();
   }
 
+  async function loadMySchedule() {
+    const tbody = document.getElementById('table-my-schedule-body');
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat jadwal Anda...</td></tr>';
+
+    const res = await callAppsScript('getUserSchedule', { username: currentUser.username });
+    const schedules = res.data || [];
+
+    tbody.innerHTML = '';
+    if (schedules.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Belum ada jadwal shift yang terdaftar untuk Anda.</td></tr>';
+      return;
+    }
+
+    schedules.forEach(s => {
+      let badgeShift = s.shift === 'PAGI' ? '<span class="badge bg-primary">Shift Pagi (08:15)</span>' : '<span class="badge bg-dark">Shift Siang (12:15)</span>';
+      tbody.innerHTML += `
+        <tr>
+          <td><i class="fa-regular fa-calendar me-1 text-muted"></i> ${s.tanggal}</td>
+          <td>${badgeShift}</td>
+          <td><small class="text-secondary">${s.catatan || '-'}</small></td>
+        </tr>
+      `;
+    });
+  }
+
   function openNativeCamera() {
     document.getElementById('input-native-camera').click();
   }
@@ -981,9 +1065,9 @@
   function handleShiftChange() {
     const shift = document.getElementById('absen-shift').value;
     if (shift === 'SIANG') {
-      alert("Shift Siang (12.12 - 20.00): Anda dapat melakukan absen tanpa pembatasan radius lokasi GPS.");
+      alert("Shift Siang (12:15 - 20:00): Anda dapat melakukan absen tanpa pembatasan radius lokasi GPS.");
     } else {
-      alert("Shift Pagi (08.15 - 16.00): Wajib berada di lokasi kantor (radius 100 meter).");
+      alert("Shift Pagi (08:15 - 16:00): Wajib berada di lokasi kantor (radius 100 meter).");
     }
   }
 
@@ -1336,6 +1420,13 @@
     });
   }
 
+  function toggleAllUsers(status) {
+    const checkboxes = document.querySelectorAll('.gen-user-checkbox');
+    checkboxes.forEach(chk => {
+      chk.checked = status;
+    });
+  }
+
   async function handleCreateSchedule() {
     const userSelect = document.getElementById('schedule-user');
     const scheduleData = {
@@ -1362,7 +1453,8 @@
   async function handleGenerateRandomSchedule() {
     const startDate = document.getElementById('gen-start-date').value;
     const endDate = document.getElementById('gen-end-date').value;
-    const shiftMode = document.getElementById('gen-shift-mode').value;
+    const shift1Quota = document.getElementById('gen-shift1-quota').value;
+    const shift2Quota = document.getElementById('gen-shift2-quota').value;
     
     const checkboxes = document.querySelectorAll('.gen-user-checkbox:checked');
     let users = [];
@@ -1378,9 +1470,21 @@
       alert("Pilih minimal satu user!");
       return;
     }
+    if ((parseInt(shift1Quota) || 0) + (parseInt(shift2Quota) || 0) <= 0) {
+      alert("Tentukan jumlah kuota orang per hari untuk minimal salah satu shift!");
+      return;
+    }
 
-    showLoading('Men-generate jadwal sesuai pilihan shift...');
-    const res = await callAppsScript('generateRandomSchedule', { payload: { startDate, endDate, users, shiftMode } });
+    showLoading('Men-generate & mengacak jadwal shift...');
+    const res = await callAppsScript('generateRandomSchedule', { 
+      payload: { 
+        startDate, 
+        endDate, 
+        users, 
+        shift1Quota: parseInt(shift1Quota) || 0,
+        shift2Quota: parseInt(shift2Quota) || 0
+      } 
+    });
     hideLoading();
 
     alert(res.message);
@@ -1455,25 +1559,35 @@
     const res = await callAppsScript('getAllSchedules');
     allSchedulesList = res.data || [];
 
+    renderAdminSchedulesTable(allSchedulesList);
+  }
+
+  function renderAdminSchedulesTable(list) {
+    const tbody = document.getElementById('table-all-schedules-body');
     tbody.innerHTML = '';
-    if (!allSchedulesList || allSchedulesList.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada jadwal yang dibuat.</td></tr>';
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Belum ada jadwal yang dibuat.</td></tr>';
       return;
     }
 
-    allSchedulesList.forEach(s => {
+    list.forEach(s => {
+      let shiftBadge = s.shift === 'PAGI' 
+        ? '<span class="badge bg-primary">Shift Pagi (08:15)</span>' 
+        : '<span class="badge bg-dark">Shift Siang (12:15)</span>';
+
       tbody.innerHTML += `
         <tr>
-          <td>${s.tanggal}</td>
+          <td><i class="fa-regular fa-calendar-days text-muted me-1"></i> ${s.tanggal}</td>
           <td><b>${s.nama}</b><br><small class="text-muted">@${s.username}</small></td>
-          <td><span class="badge ${s.shift === 'PAGI' ? 'bg-primary' : 'bg-dark'}">${s.shift}</span></td>
-          <td><small>${s.catatan}</small></td>
-          <td>
+          <td>${shiftBadge}</td>
+          <td><small class="text-secondary">${s.catatan}</small></td>
+          <td class="text-center">
             <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-warning text-dark" onclick="openEditScheduleModal(${s.rowIndex})" title="Edit Jadwal">
+              <button class="btn btn-outline-warning text-dark py-1 px-2" onclick="openEditScheduleModal(${s.rowIndex})" title="Edit Jadwal">
                 <i class="fa-solid fa-pen"></i>
               </button>
-              <button class="btn btn-outline-danger" onclick="handleDeleteSchedule(${s.rowIndex})" title="Hapus Jadwal">
+              <button class="btn btn-outline-danger py-1 px-2" onclick="handleDeleteSchedule(${s.rowIndex})" title="Hapus Jadwal">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -1481,6 +1595,17 @@
         </tr>
       `;
     });
+  }
+
+  function filterAdminSchedules() {
+    const keyword = document.getElementById('filter-sch-search').value.toLowerCase();
+    const filtered = allSchedulesList.filter(s => 
+      s.nama.toLowerCase().includes(keyword) || 
+      s.username.toLowerCase().includes(keyword) || 
+      s.tanggal.includes(keyword) ||
+      s.shift.toLowerCase().includes(keyword)
+    );
+    renderAdminSchedulesTable(filtered);
   }
 
   function openEditScheduleModal(rowIndex) {
