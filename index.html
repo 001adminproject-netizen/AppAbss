@@ -3,145 +3,36 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Aplikasi Absensi PKL</title>
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  
-  <style>
-    :root {
-      --primary-color: #4e73df;
-      --bg-gradient: linear-gradient(135deg, #2A5298 0%, #1E3C72 100%);
-    }
-
-    body {
-      background: #f4f6f9;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      min-height: 100vh;
-      color: #333;
-    }
-
-    .main-bg {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px 0;
-    }
-
-    .card-modern {
-      background: #ffffff;
-      border: none;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-      overflow: hidden;
-      max-width: 520px;
-      width: 100%;
-    }
-
-    .card-header-gradient {
-      background: var(--bg-gradient);
-      color: white;
-      padding: 22px 20px;
-      text-align: center;
-    }
-
-    .camera-container {
-      position: relative;
-      width: 100%;
-      height: 240px;
-      background-color: #1a1a1a;
-      border-radius: 14px;
-      overflow: hidden;
-      margin-bottom: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border: 2px dashed #ddd;
-    }
-
-    #preview-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .clock-display {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #1e3c72;
-      letter-spacing: 1px;
-    }
-
-    #admin-map {
-      height: 280px;
-      width: 100%;
-      border-radius: 12px;
-      margin-top: 10px;
-    }
-
-    #loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      backdrop-filter: blur(2px);
-    }
-
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #print-section, #print-section * {
-        visibility: visible;
-      }
-      #print-section {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
-      .no-print {
-        display: none !important;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- INDIKATOR LOADING / PROSES BERLANGSUNG -->
 <div id="loading-overlay" class="d-none">
   <div class="spinner-border text-light" style="width: 2.5rem; height: 2.5rem;" role="status">
     <span class="visually-hidden">Loading...</span>
   </div>
-  <h6 class="mt-3 fw-bold" id="loading-text">Memproses data...</h6>
+  <h6 class="mt-3 fw-bold text-white" id="loading-text">Memproses data...</h6>
 </div>
 
-<div class="main-bg container">
+<div class="main-bg container px-2 px-sm-3">
 
-  <!-- 1. VIEW LOGIN & REGISTER -->
+  <!-- VIEW AUTH -->
   <div id="view-auth" class="card-modern">
     <div class="card-header-gradient">
       <i class="fa-solid fa-user-check fa-3x mb-2"></i>
-      <h3 class="fw-bold mb-0">Sistem Absensi PKL</h3>
+      <h3 class="fw-bold mb-0 fs-4">Sistem Absensi PKL</h3>
       <small id="auth-subtitle" class="opacity-75">Silakan masuk ke akun Anda</small>
     </div>
     
-    <div class="p-4">
+    <div class="p-3 p-sm-4">
       <div id="auth-alert"></div>
 
-      <!-- FORM LOGIN -->
       <form id="form-login" onsubmit="event.preventDefault(); handleLogin();">
         <div class="mb-3">
           <label class="form-label fw-bold text-secondary small">Username / ID</label>
@@ -157,7 +48,7 @@
             <input type="password" id="login-password" class="form-control" placeholder="Masukkan Password" required>
           </div>
         </div>
-        <button class="btn btn-primary w-100 py-2 fw-bold rounded-3 shadow-sm mb-3" id="btn-login" type="submit">
+        <button class="btn btn-primary w-100 py-2.5 fw-bold rounded-3 shadow-sm mb-3" id="btn-login" type="submit">
           <i class="fa-solid fa-right-to-bracket me-2"></i> Masuk Akun
         </button>
         <div class="text-center">
@@ -165,7 +56,6 @@
         </div>
       </form>
 
-      <!-- FORM REGISTER -->
       <form id="form-register" class="d-none" onsubmit="event.preventDefault(); handleRegister();">
         <div class="mb-2">
           <label class="form-label fw-bold text-secondary small">Nama Lengkap</label>
@@ -181,92 +71,90 @@
         </div>
         <div class="mb-2">
           <label class="form-label fw-bold text-secondary small">Jenis Jadwal PKL</label>
-          <select id="reg-jenis-pkl" class="form-select"><option value="5_HARI">5 Hari PKL (Senin-Jumat, libur tanggal merah)</option><option value="7_HARI">7 Hari PKL (termasuk Sabtu, Minggu, dan tanggal merah)</option></select>
+          <select id="reg-jenis-pkl" class="form-select">
+            <option value="5_HARI">5 Hari PKL (Senin-Jumat)</option>
+            <option value="7_HARI">7 Hari PKL (Termasuk akhir pekan)</option>
+          </select>
         </div>
         <div class="row g-2 mb-2">
           <div class="col-6">
             <label class="form-label fw-bold text-secondary small">Mulai PKL</label>
-            <input type="date" id="reg-mulai" class="form-control" onchange="autoUpdateTotalDays('reg-mulai', 'reg-selesai', 'reg-totalhari')" required>
+            <input type="date" id="reg-mulai" class="form-control" required>
           </div>
           <div class="col-6">
             <label class="form-label fw-bold text-secondary small">Selesai PKL</label>
-            <input type="date" id="reg-selesai" class="form-control" onchange="autoUpdateTotalDays('reg-mulai', 'reg-selesai', 'reg-totalhari')" required>
+            <input type="date" id="reg-selesai" class="form-control" required>
           </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label fw-bold text-secondary small">Target Hari Kerja (Otomatis)</label>
-          <input type="number" id="reg-totalhari" class="form-control bg-light" readonly placeholder="Otomatis terhitung">
-        </div>
-        <button class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm mb-3" id="btn-register" type="submit">
+        <button class="btn btn-success w-100 py-2.5 fw-bold rounded-3 shadow-sm mb-3" id="btn-register" type="submit">
           <i class="fa-solid fa-user-plus me-2"></i> Kirim Pendaftaran
         </button>
         <div class="text-center">
           <small class="text-muted">Sudah punya akun? <a href="#" onclick="toggleAuthMode('login'); return false;" class="text-primary fw-bold text-decoration-none">Kembali ke Login</a></small>
         </div>
       </form>
-
     </div>
   </div>
 
-  <!-- 2. VIEW USER / SISWA PKL -->
-  <div id="view-user" class="card-modern d-none" style="max-width: 600px;">
-    <div class="card-header-gradient d-flex justify-content-between align-items-center px-4">
-      <div class="text-start">
-        <h5 id="user-welcome" class="fw-bold m-0"></h5>
-        <small class="text-white-50">Siswa / Mahasiswa PKL</small>
+  <!-- VIEW USER -->
+  <div id="view-user" class="card-modern d-none mobile-user-card">
+    <div class="card-header-gradient px-3 py-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <div class="avatar-circle">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="text-start">
+            <h6 id="user-welcome" class="fw-bold m-0 text-white text-truncate" style="max-width: 180px;">Siswa PKL</h6>
+            <span class="badge bg-white text-primary fw-bold" style="font-size: 0.7rem;">Siswa / Mahasiswa</span>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-light rounded-circle shadow-sm" onclick="logout()" title="Keluar">
+          <i class="fa-solid fa-power-off text-danger"></i>
+        </button>
       </div>
-      <button class="btn btn-sm btn-outline-light rounded-circle" onclick="logout()" title="Keluar">
-        <i class="fa-solid fa-power-off"></i>
+
+      <div class="mobile-clock-card mt-3">
+        <div class="text-white-50 small fw-semibold" id="current-date">Hari Ini</div>
+        <div class="clock-display text-white" id="current-time">00:00:00</div>
+      </div>
+    </div>
+
+    <div class="mobile-nav-tabs bg-light border-bottom">
+      <button class="nav-btn active" onclick="switchUserTab('absen', this)">
+        <i class="fa-solid fa-clipboard-user"></i> Absen
+      </button>
+      <button class="nav-btn" onclick="switchUserTab('riwayat', this); loadMyAttendanceHistory();">
+        <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+      </button>
+      <button class="nav-btn" onclick="switchUserTab('jadwal', this); loadMySchedule();">
+        <i class="fa-solid fa-calendar-days"></i> Jadwal
       </button>
     </div>
 
-    <!-- NAV TABS USER -->
-    <ul class="nav nav-tabs nav-fill bg-light px-2 pt-2 border-bottom" id="userTab" role="tablist">
-      <li class="nav-item">
-        <button class="nav-link active small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-absen">
-          <i class="fa-solid fa-clipboard-user me-1"></i> Form Absensi
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-riwayat" onclick="loadMyAttendanceHistory()"><i class="fa-solid fa-clock-rotate-left me-1"></i> Riwayat Absen</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link small fw-bold py-2" data-bs-toggle="tab" data-bs-target="#user-tab-jadwal" onclick="loadMySchedule()">
-          <i class="fa-solid fa-calendar-days me-1"></i> Jadwal Saya
-        </button>
-      </li>
-    </ul>
-
-    <div class="tab-content p-4">
-      <!-- TAB 1: FORM ABSENSI -->
-      <div class="tab-pane fade show active" id="user-tab-absen">
-        <div class="text-center mb-3">
-          <div class="text-muted small fw-bold" id="current-date">Hari Ini</div>
-          <div class="clock-display" id="current-time">00:00:00</div>
-        </div>
-
-        <div class="alert alert-info py-2 px-3 mb-3 small border-0 shadow-sm rounded-3">
-          <i class="fa-solid fa-circle-info me-1 text-primary"></i> <b>Ketentuan Shift:</b>
-          <ul class="mb-0 ps-3 mt-1">
-            <li><b>Shift Pagi (08:15):</b> Wajib Radius 100m Kantor.</li>
-            <li><b>Shift Siang (12:15):</b> Bebas Radius.</li>
-            <li><i>Pastikan absen sesuai dengan jadwal hari ini.</i></li>
-          </ul>
+    <div class="p-3">
+      <div class="user-tab-pane" id="user-tab-absen">
+        <div class="alert alert-primary py-2 px-3 mb-3 border-0 rounded-3 d-flex align-items-center gap-2 small">
+          <i class="fa-solid fa-circle-info fs-5"></i>
+          <div>
+            <b>Shift Pagi (08:15):</b> Radius 100m kantor.<br>
+            <b>Shift Siang (12:15):</b> Bebas Radius.
+          </div>
         </div>
 
         <div class="row g-2 mb-3">
           <div class="col-6">
-            <label class="form-label fw-bold text-secondary small">Pilih Shift</label>
-            <select id="absen-shift" class="form-select rounded-3" onchange="handleShiftChange()">
-              <option value="PAGI">Shift Pagi (08:15)</option>
-              <option value="SIANG">Shift Siang (12:15)</option>
+            <label class="form-label fw-bold text-secondary small m-1">Pilih Shift</label>
+            <select id="absen-shift" class="form-select form-select-lg rounded-3 fs-6" onchange="handleShiftChange()">
+              <option value="PAGI">Pagi (08:15)</option>
+              <option value="SIANG">Siang (12:15)</option>
             </select>
           </div>
           <div class="col-6">
-            <label class="form-label fw-bold text-secondary small">Tipe Absen</label>
-            <select id="absen-tipe" class="form-select rounded-3" onchange="handleAbsenTypeChange()">
-              <option value="MASUK">MASUK (Hadir)</option>
-              <option value="PULANG">PULANG (Hadir)</option>
+            <label class="form-label fw-bold text-secondary small m-1">Tipe Absen</label>
+            <select id="absen-tipe" class="form-select form-select-lg rounded-3 fs-6" onchange="handleAbsenTypeChange()">
+              <option value="MASUK">MASUK</option>
+              <option value="PULANG">PULANG</option>
               <option value="IZIN">IZIN</option>
               <option value="SAKIT">SAKIT</option>
             </select>
@@ -274,73 +162,94 @@
         </div>
 
         <div id="wrapper-camera-section">
-          <div class="camera-container shadow-sm position-relative">
+          <div class="camera-container shadow-sm mb-2">
             <img id="preview-img" class="d-none" alt="Preview Absen">
-            
             <div id="placeholder-box" class="text-center text-muted p-3">
-              <i class="fa-solid fa-camera fa-3x mb-2 text-primary"></i>
+              <i class="fa-solid fa-camera-retro fa-3x mb-2 text-primary opacity-75"></i>
               <p class="mb-0 small fw-bold">Belum Ada Foto Terambil</p>
-              <small class="opacity-75">Ambil foto selfie sebelum kirim absen</small>
+              <small class="text-muted">Ambil foto selfie sebelum kirim</small>
             </div>
           </div>
 
           <input type="file" id="input-native-camera" class="d-none" accept="image/*" capture="user" onchange="previewFotoFromCamera(event)">
           
-          <button type="button" class="btn btn-outline-primary w-100 py-2 fw-bold mb-3 rounded-3" onclick="openNativeCamera()">
-            <i class="fa-solid fa-camera-retro me-2"></i> Ambil Foto Selfie
+          <button type="button" class="btn btn-outline-primary w-100 py-2.5 fw-bold mb-3 rounded-3 shadow-sm" onclick="openNativeCamera()">
+            <i class="fa-solid fa-camera me-2"></i> Buka Kamera Selfie
           </button>
         </div>
 
+        <div id="group-keterangan-masuk" class="mb-3">
+          <label class="form-label fw-bold text-secondary small m-1">Keterangan / Alasan (Opsional / Jika Terlambat)</label>
+          <textarea id="absen-keterangan-masuk" class="form-control rounded-3" rows="2" placeholder="Tuliskan alasan jika Anda datang terlambat..."></textarea>
+        </div>
+
         <div id="group-kegiatan" class="mb-3 d-none">
-          <label class="form-label fw-bold text-secondary small">Laporan Kegiatan Ringkas</label>
-          <textarea id="absen-kegiatan" class="form-control rounded-3" rows="2" placeholder="Tuliskan ringkasan kegiatan Anda hari ini..."></textarea>
+          <label class="form-label fw-bold text-secondary small m-1">Ringkasan Kegiatan Hari Ini</label>
+          <textarea id="absen-kegiatan" class="form-control rounded-3" rows="2" placeholder="Tuliskan kegiatan yang sudah dikerjakan..."></textarea>
         </div>
 
         <div id="group-keterangan" class="mb-3 d-none">
-          <label class="form-label fw-bold text-secondary small">Keterangan / Alasan <span class="text-danger">*</span></label>
-          <textarea id="absen-keterangan" class="form-control rounded-3" rows="2" placeholder="Tuliskan keterangan/alasan izin atau sakit..."></textarea>
+          <label class="form-label fw-bold text-secondary small m-1">Alasan Izin / Sakit <span class="text-danger">*</span></label>
+          <textarea id="absen-keterangan" class="form-control rounded-3" rows="2" placeholder="Jelaskan alasan pengajuan izin/sakit..."></textarea>
         </div>
 
-        <button id="btn-submit-absen" class="btn btn-success w-100 py-2 fw-bold rounded-3 shadow-sm mb-4" onclick="processAbsen()">
+        <button id="btn-submit-absen" class="btn btn-success w-100 py-3 fw-bold rounded-3 shadow mb-4 fs-6" onclick="processAbsen()">
           <i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen Sekarang
         </button>
 
         <div class="border-top pt-3">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold text-dark m-0"><i class="fa-regular fa-calendar-check text-primary me-2"></i>Absen Hari Ini</h6>
-            <button class="btn btn-sm btn-light border" onclick="loadTodayAttendance()" title="Refresh Data">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold text-dark m-0 small"><i class="fa-regular fa-calendar-check text-primary me-1"></i>Status Absen Hari Ini</h6>
+            <button class="btn btn-sm btn-light border py-1 px-2" onclick="loadTodayAttendance()">
               <i class="fa-solid fa-rotate-right text-secondary"></i>
             </button>
           </div>
           <div id="today-records-container">
-            <p class="text-muted small text-center">Belum ada catatan absen hari ini.</p>
+            <p class="text-muted small text-center my-2">Belum ada catatan absen hari ini.</p>
           </div>
         </div>
       </div>
 
-      <!-- TAB RIWAYAT ABSENSI PER USER -->
-      <div class="tab-pane fade" id="user-tab-riwayat">
-        <div class="d-flex justify-content-between align-items-center mb-3"><h6 class="fw-bold m-0">Riwayat Absensi Saya</h6><button class="btn btn-sm btn-outline-primary" onclick="loadMyAttendanceHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button></div>
-        <div id="my-attendance-summary" class="small text-muted mb-2"></div>
-        <div class="table-responsive" style="max-height:380px"><table class="table table-sm table-striped table-hover align-middle border"><thead class="table-light sticky-top"><tr><th>Tanggal</th><th>Masuk</th><th>Pulang</th><th>Status</th><th>Kegiatan/Keterangan</th><th>Telat</th></tr></thead><tbody id="table-my-attendance-body"><tr><td colspan="6" class="text-center text-muted">Memuat riwayat...</td></tr></tbody></table></div>
-      </div>
-      <!-- TAB 2: JADWAL SAYA (USER) -->
-      <div class="tab-pane fade" id="user-tab-jadwal">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="fw-bold text-dark m-0"><i class="fa-solid fa-calendar-days text-primary me-2"></i>Daftar Jadwal Shift Saya</h6>
-          <button class="btn btn-sm btn-outline-primary" onclick="loadMySchedule()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+      <div class="user-tab-pane d-none" id="user-tab-riwayat">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold m-0 small">Riwayat Absensi Saya</h6>
+          <button class="btn btn-sm btn-outline-primary py-1 px-2" onclick="loadMyAttendanceHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
         </div>
-        <div class="table-responsive" style="max-height: 380px;">
-          <table class="table table-striped table-hover align-middle small border">
+        <div id="my-attendance-summary" class="small text-muted mb-2"></div>
+        <div class="table-responsive rounded-3 border" style="max-height:360px">
+          <table class="table table-sm table-striped table-hover align-middle mb-0" style="font-size: 0.8rem;">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th>Tanggal</th>
+                <th>Masuk</th>
+                <th>Pulang</th>
+                <th>Status</th>
+                <th>Kegiatan/Alasan</th>
+              </tr>
+            </thead>
+            <tbody id="table-my-attendance-body">
+              <tr><td colspan="5" class="text-center text-muted">Memuat...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="user-tab-pane d-none" id="user-tab-jadwal">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold text-dark m-0 small"><i class="fa-solid fa-calendar-days text-primary me-1"></i>Jadwal Shift Saya</h6>
+          <button class="btn btn-sm btn-outline-primary py-1 px-2" onclick="loadMySchedule()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+        <div class="table-responsive rounded-3 border" style="max-height: 360px;">
+          <table class="table table-sm table-striped align-middle mb-0" style="font-size: 0.8rem;">
             <thead class="table-light sticky-top">
               <tr>
                 <th>Tanggal</th>
                 <th>Shift</th>
-                <th>Catatan / Tugas</th>
+                <th>Tugas/Catatan</th>
               </tr>
             </thead>
             <tbody id="table-my-schedule-body">
-              <tr><td colspan="3" class="text-center text-muted">Memuat jadwal Anda...</td></tr>
+              <tr><td colspan="3" class="text-center text-muted">Memuat...</td></tr>
             </tbody>
           </table>
         </div>
@@ -348,64 +257,62 @@
     </div>
   </div>
 
-  <!-- 3. VIEW ADMIN -->
-  <div id="view-admin" class="container bg-white p-4 rounded-4 shadow-sm d-none" style="max-width: 1100px;">
-    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+  <!-- VIEW ADMIN -->
+  <div id="view-admin" class="container bg-white p-3 p-md-4 rounded-4 shadow-sm d-none" style="max-width: 1100px;">
+    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
       <div>
-        <h4 class="fw-bold m-0 text-primary"><i class="fa-solid fa-user-shield me-2"></i>Dashboard Admin Absensi</h4>
-        <small class="text-muted">Kelola Rekapitulasi User Aktif, Jadwal Kerja, Approve, & Pengaturan</small>
+        <h4 class="fw-bold m-0 text-primary fs-5"><i class="fa-solid fa-user-shield me-2"></i>Admin Dashboard</h4>
+        <small class="text-muted">Kelola Rekapitulasi, Jadwal, & Pengaturan</small>
       </div>
       <button class="btn btn-outline-danger btn-sm rounded-3 fw-bold" onclick="logout()">
         <i class="fa-solid fa-sign-out-alt me-1"></i> Logout
       </button>
     </div>
 
-    <ul class="nav nav-pills mb-3" id="adminTab" role="tablist">
-      <li class="nav-item">
-        <button class="nav-link active rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-rekap" onclick="loadAdminDashboard()">
-          <i class="fa-solid fa-chart-pie me-1"></i> Rekap User Active
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-jadwal" onclick="loadJadwalSection()">
-          <i class="fa-solid fa-calendar-days me-1"></i> Buat Jadwal Shift
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-detail-all" onclick="loadAllAttendanceDetails()">
-          <i class="fa-solid fa-list-check me-1"></i> Detail Riwayat All User
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-approve" onclick="loadPendingUsers()">
-          <i class="fa-solid fa-user-clock me-1"></i> Approve User <span id="badge-pending-count" class="badge bg-danger ms-1 d-none">0</span>
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link rounded-3 me-2" data-bs-toggle="tab" data-bs-target="#tab-user">
-          <i class="fa-solid fa-user-plus me-1"></i> Tambah User
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link rounded-3" data-bs-toggle="tab" data-bs-target="#tab-setting" onclick="initAdminMap()">
-          <i class="fa-solid fa-location-dot me-1"></i> Lokasi Kantor
-        </button>
-      </li>
-    </ul>
+    <div class="nav-scroll-wrapper mb-3">
+      <ul class="nav nav-pills flex-nowrap" id="adminTab" role="tablist">
+        <li class="nav-item">
+          <button class="nav-link active rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-rekap" onclick="loadAdminDashboard()">
+            <i class="fa-solid fa-chart-pie me-1"></i> Rekap Active
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-jadwal" onclick="loadJadwalSection()">
+            <i class="fa-solid fa-calendar-days me-1"></i> Buat Jadwal
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-detail-all" onclick="loadAllAttendanceDetails()">
+            <i class="fa-solid fa-list-check me-1"></i> Riwayat All
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-approve" onclick="loadPendingUsers()">
+            <i class="fa-solid fa-user-clock me-1"></i> Approve <span id="badge-pending-count" class="badge bg-danger ms-1 d-none">0</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-user">
+            <i class="fa-solid fa-user-plus me-1"></i> Tambah User
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-setting" onclick="initAdminMap()">
+            <i class="fa-solid fa-location-dot me-1"></i> Lokasi
+          </button>
+        </li>
+      </ul>
+    </div>
 
     <div class="tab-content pt-2">
-      <!-- TAB 1: REKAP USER ACTIVE -->
       <div class="tab-pane fade show active" id="tab-rekap">
-        <div class="alert alert-light border small text-muted mb-3">
-          <i class="fa-solid fa-info-circle me-1 text-primary"></i> Menampilkan rekapitulasi khusus <b>User Biasa (Siswa/Mahasiswa PKL)</b>. User berkategori Admin disaring.
-        </div>
         <div class="table-responsive">
-          <table class="table table-hover align-middle border">
+          <table class="table table-hover align-middle border small">
             <thead class="table-light">
               <tr>
                 <th>Username / Nama</th>
                 <th>Periode PKL</th>
-                <th>Rincian Total (M / I / S)</th>
+                <th>Total (M / I / S)</th>
                 <th>Keterlambatan</th>
                 <th>Persentase</th>
                 <th>Aksi</th>
@@ -416,190 +323,122 @@
         </div>
       </div>
 
-      <!-- TAB JADWAL SHIFT -->
       <div class="tab-pane fade" id="tab-jadwal">
         <ul class="nav nav-tabs mb-3" id="subJadwalTab" role="tablist">
           <li class="nav-item">
             <button class="nav-link active small fw-bold" data-bs-toggle="tab" data-bs-target="#sub-buat-manual">Manual / Random</button>
           </li>
           <li class="nav-item">
-            <button class="nav-link small fw-bold" data-bs-toggle="tab" data-bs-target="#sub-upload-excel" onclick="loadJadwalSection()">Import Excel/CSV</button>
-          </li>
-          <li class="nav-item">
-            <button class="nav-link small fw-bold" data-bs-toggle="tab" data-bs-target="#sub-list-jadwal" onclick="loadAllSchedules()">Lihat & Kelola Daftar Jadwal</button>
+            <button class="nav-link small fw-bold" data-bs-toggle="tab" data-bs-target="#sub-list-jadwal" onclick="loadAllSchedules()">Daftar Jadwal</button>
           </li>
         </ul>
 
         <div class="tab-content">
-          <!-- Sub 1: Manual & Random Generator dengan Kuota Shift 1 & 2 -->
           <div class="tab-pane fade show active" id="sub-buat-manual">
-            <div class="row g-4">
-              <!-- Form Manual -->
-              <div class="col-md-6 border-end">
-                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-clock text-primary me-2"></i>Buat Jadwal Manual (Satuan)</h6>
+            <div class="row g-3">
+              <div class="col-md-5 border-end">
+                <h6 class="fw-bold text-dark mb-2 small"><i class="fa-solid fa-clock text-primary me-1"></i>Manual Satuan</h6>
                 <div class="mb-2">
-                  <label class="form-label small fw-bold">Pilih User Active</label>
+                  <label class="form-label small fw-bold m-0">Pilih User</label>
                   <select id="schedule-user" class="form-select form-select-sm"></select>
                 </div>
                 <div class="mb-2">
-                  <label class="form-label small fw-bold">Tanggal Kerja</label>
+                  <label class="form-label small fw-bold m-0">Tanggal Kerja</label>
                   <input type="date" id="schedule-date" class="form-control form-control-sm">
                 </div>
                 <div class="mb-2">
-                  <label class="form-label small fw-bold">Pilih Shift</label>
+                  <label class="form-label small fw-bold m-0">Shift</label>
                   <select id="schedule-shift" class="form-select form-select-sm">
-                    <option value="PAGI">Shift Pagi (08.15 - 16.00)</option>
-                    <option value="SIANG">Shift Siang (12.15 - 20.00)</option>
+                    <option value="PAGI">Pagi (08:15)</option>
+                    <option value="SIANG">Siang (12:15)</option>
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label small fw-bold">Catatan / Tugas Khusus</label>
-                  <input type="text" id="schedule-note" class="form-control form-control-sm" placeholder="Contoh: Tugas Lapangan">
+                  <label class="form-label small fw-bold m-0">Catatan/Tugas</label>
+                  <input type="text" id="schedule-note" class="form-control form-control-sm" placeholder="Opsional">
                 </div>
                 <button class="btn btn-primary btn-sm fw-bold w-100" onclick="handleCreateSchedule()">
-                  <i class="fa-solid fa-calendar-plus me-1"></i> Simpan Jadwal Manual
+                  <i class="fa-solid fa-save me-1"></i> Simpan Jadwal
                 </button>
               </div>
 
-              <!-- Form Random Generator dengan Kuota Shift 1 & 2 -->
-              <div class="col-md-6">
-                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-wand-magic-sparkles text-success me-2"></i>Generate Jadwal Random Fleksibel</h6>
+              <div class="col-md-7">
+                <h6 class="fw-bold text-dark mb-2 small"><i class="fa-solid fa-wand-magic-sparkles text-success me-1"></i>Generate Shift Otomatis & Adil</h6>
+                
                 <div class="row g-2 mb-2">
                   <div class="col-6">
-                    <label class="form-label small fw-bold">Tanggal Mulai</label>
+                    <label class="form-label small fw-bold m-0">Tgl Mulai</label>
                     <input type="date" id="gen-start-date" class="form-control form-control-sm">
                   </div>
                   <div class="col-6">
-                    <label class="form-label small fw-bold">Tanggal Selesai</label>
+                    <label class="form-label small fw-bold m-0">Tgl Selesai</label>
                     <input type="date" id="gen-end-date" class="form-control form-control-sm">
                   </div>
                 </div>
 
-                <div class="card p-2 bg-light border-0 mb-2">
-                  <small class="fw-bold text-secondary mb-1"><i class="fa-solid fa-users-gear me-1"></i>Atur Kuota Orang per Hari:</small>
-                  <div class="row g-2">
-                    <div class="col-6">
-                      <label class="form-label small text-muted m-0">Shift 1 - Pagi (08:15)</label>
-                      <div class="input-group input-group-sm">
-                        <input type="number" id="gen-shift1-quota" class="form-control" value="2" min="0" placeholder="Jumlah">
-                        <span class="input-group-text">Orang</span>
-                      </div>
-                    </div>
-                    <div class="col-6">
-                      <label class="form-label small text-muted m-0">Shift 2 - Siang (12:15)</label>
-                      <div class="input-group input-group-sm">
-                        <input type="number" id="gen-shift2-quota" class="form-control" value="2" min="0" placeholder="Jumlah">
-                        <span class="input-group-text">Orang</span>
-                      </div>
-                    </div>
+                <div class="row g-2 mb-2 bg-light p-2 rounded border">
+                  <div class="col-12 mb-1">
+                    <label class="form-label small fw-bold text-dark m-0">Kategori Hari Kerja PKL</label>
+                    <select id="gen-filter-jenis-pkl" class="form-select form-select-sm fw-bold text-primary">
+                      <option value="ALL">Semua Tipe PKL (5 Hari & 7 Hari)</option>
+                      <option value="5_HARI">Khusus 5 Hari PKL (Senin-Jumat saja)</option>
+                      <option value="7_HARI">Khusus 7 Hari PKL (Termasuk Akhir Pekan)</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-primary m-0">Kuota Shift Pagi / Hari</label>
+                    <input type="number" id="gen-quota-pagi" class="form-control form-control-sm" value="2" min="0" placeholder="Jml Orang">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-bold text-success m-0">Kuota Shift Siang / Hari</label>
+                    <input type="number" id="gen-quota-siang" class="form-control form-control-sm" value="2" min="0" placeholder="Jml Orang">
                   </div>
                 </div>
 
                 <div class="mb-2">
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label small fw-bold m-0">Pilih User Yang Ditugaskan</label>
+                    <label class="form-label small fw-bold m-0">Pilih User Terlibat</label>
                     <div class="btn-group btn-group-sm">
-                      <button type="button" class="btn btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="toggleAllUsers(true)">Pilih Semua</button>
-                      <button type="button" class="btn btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="toggleAllUsers(false)">Hapus Semua</button>
+                      <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="toggleAllUsers(true)">Pilih Semua</button>
+                      <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="toggleAllUsers(false)">Hapus Semua</button>
                     </div>
                   </div>
-                  <div id="gen-user-checkboxes" class="border p-2 rounded bg-light" style="max-height: 100px; overflow-y: auto;">
-                    <!-- Diisi via Javascript -->
-                  </div>
+                  <div id="gen-user-checkboxes" class="border p-2 rounded bg-light" style="max-height: 100px; overflow-y: auto;"></div>
                 </div>
 
                 <button class="btn btn-success btn-sm fw-bold w-100 mt-2" onclick="handleGenerateRandomSchedule()">
-                  <i class="fa-solid fa-shuffle me-1"></i> Generate & Distribusikan Shift
+                  <i class="fa-solid fa-shuffle me-1"></i> Generate Shift Adil
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- Sub 2: Upload Excel/CSV -->
-          <div class="tab-pane fade" id="sub-upload-excel">
-            <div style="max-width: 600px;">
-              <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-file-excel text-success me-2"></i>Upload Jadwal via Excel / CSV</h6>
-              <p class="text-muted small">Format kolom file CSV/Excel: <code>tanggal, username, nama, shift, catatan</code> (Tanpa baris header atau ikuti template).</p>
-              
-              <div class="d-flex gap-2 mb-3">
-                <button class="btn btn-outline-secondary btn-sm" onclick="downloadScheduleTemplate()">
-                  <i class="fa-solid fa-download me-1"></i> Download Template CSV
-                </button>
-              </div>
-
-              <div class="mb-3">
-                <input type="file" id="file-schedule-csv" class="form-control form-control-sm" accept=".csv">
-              </div>
-              <button class="btn btn-success btn-sm fw-bold w-100" onclick="handleUploadScheduleFile()">
-                <i class="fa-solid fa-upload me-1"></i> Upload dan Proses Jadwal
-              </button>
-            </div>
-          </div>
-
-          <!-- Sub 3: Lihat & Kelola Daftar Jadwal -->
           <div class="tab-pane fade" id="sub-list-jadwal">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold text-dark m-0">Daftar Seluruh Jadwal Shift Terdaftar</h6>
-              <div class="d-flex gap-2">
-                <input type="text" id="filter-sch-search" class="form-control form-control-sm" placeholder="Cari nama/tanggal..." onkeyup="filterAdminSchedules()">
-                <button class="btn btn-sm btn-light border" onclick="loadAllSchedules()"><i class="fa-solid fa-rotate-right"></i></button>
-              </div>
-            </div>
-            <div class="table-responsive" style="max-height: 380px;">
-              <table class="table table-striped table-hover align-middle small border">
+            <div class="table-responsive" style="max-height: 350px;">
+              <table class="table table-striped align-middle small border">
                 <thead class="table-light sticky-top">
                   <tr>
-                    <th>Tanggal Kerja</th>
-                    <th>Nama / Username</th>
+                    <th>Tanggal</th>
+                    <th>Nama</th>
                     <th>Shift</th>
-                    <th>Catatan / Tugas</th>
+                    <th>Catatan</th>
                     <th class="text-center">Aksi</th>
                   </tr>
                 </thead>
-                <tbody id="table-all-schedules-body">
-                  <tr><td colspan="5" class="text-center text-muted">Memuat daftar jadwal...</td></tr>
-                </tbody>
+                <tbody id="table-all-schedules-body"></tbody>
               </table>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- TAB 2: DETAIL RIWAYAT ALL USER -->
       <div class="tab-pane fade" id="tab-detail-all">
         <div id="print-section">
-          <div class="card mb-3 border-0 bg-light">
-            <div class="card-body">
-              <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-calculator text-primary me-2"></i>Rekapitulasi Total Seluruh User</h6>
-              <div id="container-rekap-summary-user" class="row g-2"></div>
-            </div>
-          </div>
-
           <div class="row g-2 mb-3 no-print">
-            <div class="col-md-4">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="fa-solid fa-search"></i></span>
-                <input type="text" id="filter-search-name" class="form-control" placeholder="Cari Nama / Username..." onkeyup="applyAttendanceFilters()">
-              </div>
+            <div class="col-md-6">
+              <input type="text" id="filter-search-name" class="form-control form-control-sm" placeholder="Cari Nama / Username..." onkeyup="applyAttendanceFilters()">
             </div>
-            <div class="col-md-3">
-              <select id="filter-month" class="form-select form-select-sm" onchange="applyAttendanceFilters()">
-                <option value="">-- Semua Bulan --</option>
-                <option value="01">Januari</option>
-                <option value="02">Februari</option>
-                <option value="03">Maret</option>
-                <option value="04">April</option>
-                <option value="05">Mei</option>
-                <option value="06">Juni</option>
-                <option value="07">Juli</option>
-                <option value="08">Agustus</option>
-                <option value="09">September</option>
-                <option value="10">Oktober</option>
-                <option value="11">November</option>
-                <option value="12">Desember</option>
-              </select>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-6">
               <select id="filter-status" class="form-select form-select-sm" onchange="applyAttendanceFilters()">
                 <option value="">-- Semua Status --</option>
                 <option value="HADIR">HADIR / MASUK</option>
@@ -607,28 +446,19 @@
                 <option value="SAKIT">SAKIT</option>
               </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-              <button class="btn btn-sm btn-success w-100 fw-bold" onclick="exportToExcel()" title="Download Excel">
-                <i class="fa-solid fa-file-excel me-1"></i> Excel
-              </button>
-              <button class="btn btn-sm btn-secondary w-100 fw-bold" onclick="printLaporan()" title="Cetak Laporan">
-                <i class="fa-solid fa-print me-1"></i> Print
-              </button>
-            </div>
           </div>
 
           <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle small border" id="table-all-details">
+            <table class="table table-striped align-middle small border" id="table-all-details">
               <thead class="table-dark">
                 <tr>
                   <th>Tanggal</th>
-                  <th>Nama / Username</th>
+                  <th>Nama</th>
                   <th>Masuk</th>
                   <th>Pulang</th>
                   <th>Status</th>
-                  <th>Keterlambatan</th>
-                  <th>Kegiatan / Alasan</th>
-                  <th class="no-print">Foto</th>
+                  <th>Alasan/Ket</th>
+                  <th>Terlambatan</th>
                 </tr>
               </thead>
               <tbody id="table-detail-all-body"></tbody>
@@ -637,16 +467,15 @@
         </div>
       </div>
 
-      <!-- TAB 3: APPROVAL USER PENDING -->
       <div class="tab-pane fade" id="tab-approve">
         <div class="table-responsive">
-          <table class="table table-hover align-middle border">
+          <table class="table table-hover align-middle border small">
             <thead class="table-light">
               <tr>
                 <th>Username / Nama</th>
-                <th>Periode PKL</th>
+                <th>Periode</th>
                 <th>Target Hari</th>
-                <th>Aksi Persetujuan</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody id="table-approve-body"></tbody>
@@ -654,1348 +483,51 @@
         </div>
       </div>
 
-      <!-- TAB 4: TAMBAH USER MANUAL -->
       <div class="tab-pane fade" id="tab-user">
-        <div class="row g-3" style="max-width: 600px;">
-          <div class="col-md-6"><label class="form-label small fw-bold">Username</label><input type="text" id="add-username" class="form-control"></div>
-          <div class="col-md-6"><label class="form-label small fw-bold">Password</label><input type="password" id="add-password" class="form-control"></div>
-          <div class="col-12"><label class="form-label small fw-bold">Nama Lengkap</label><input type="text" id="add-nama" class="form-control"></div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold">Role</label>
-            <select id="add-role" class="form-select">
-              <option value="user">User / PKL</option>
-              <option value="admin">Admin</option>
-            </select>
+        <div class="row g-2" style="max-width: 600px;">
+          <div class="col-6"><label class="form-label small fw-bold mb-0">Username</label><input type="text" id="add-username" class="form-control form-control-sm"></div>
+          <div class="col-6"><label class="form-label small fw-bold mb-0">Password</label><input type="password" id="add-password" class="form-control form-control-sm"></div>
+          <div class="col-12"><label class="form-label small fw-bold mb-0">Nama Lengkap</label><input type="text" id="add-nama" class="form-control form-control-sm"></div>
+          <div class="col-6">
+            <label class="form-label small fw-bold mb-0">Role</label>
+            <select id="add-role" class="form-select form-select-sm"><option value="user">User / PKL</option><option value="admin">Admin</option></select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold">Jenis Jadwal PKL</label>
-            <select id="add-jenis-pkl" class="form-select"><option value="5_HARI">5 Hari PKL</option><option value="7_HARI">7 Hari PKL</option></select>
+          <div class="col-6">
+            <label class="form-label small fw-bold mb-0">Jenis PKL</label>
+            <select id="add-jenis-pkl" class="form-select form-select-sm"><option value="5_HARI">5 Hari PKL</option><option value="7_HARI">7 Hari PKL</option></select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold">Akses Lokasi</label>
-            <select id="add-bebas" class="form-select">
-              <option value="false">Wajib Radius 100m (Shift Pagi)</option>
-              <option value="true">Bebas Lokasi Radius</option>
-            </select>
+          <div class="col-6">
+            <label class="form-label small fw-bold mb-0">Mulai PKL</label>
+            <input type="date" id="add-mulai" class="form-control form-control-sm">
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold">Tanggal Mulai PKL</label>
-            <input type="date" id="add-mulai" class="form-control" onchange="autoUpdateTotalDays('add-mulai', 'add-selesai', 'add-total-hari')">
+          <div class="col-6">
+            <label class="form-label small fw-bold mb-0">Selesai PKL</label>
+            <input type="date" id="add-selesai" class="form-control form-control-sm">
           </div>
-          <div class="col-md-6">
-            <label class="form-label small fw-bold">Tanggal Selesai PKL</label>
-            <input type="date" id="add-selesai" class="form-control" onchange="autoUpdateTotalDays('add-mulai', 'add-selesai', 'add-total-hari')">
-          </div>
-          <div class="col-12">
-            <label class="form-label small fw-bold">Total Target Hari Kerja (Otomatis Pemotong Libur/Weekend)</label>
-            <input type="number" id="add-total-hari" class="form-control bg-light" readonly placeholder="Otomatis terhitung">
-          </div>
-          <div class="col-12">
-            <button id="btn-add-user" class="btn btn-primary fw-bold" onclick="handleAddUser()">
-              <i class="fa-solid fa-save me-1"></i> Simpan User Baru
-            </button>
+          <div class="col-12 mt-3">
+            <button id="btn-add-user" class="btn btn-primary btn-sm fw-bold w-100" onclick="handleAddUser()">Simpan User Baru</button>
           </div>
         </div>
       </div>
 
-      <!-- TAB 5: PENGATURAN LOKASI -->
       <div class="tab-pane fade" id="tab-setting">
-        <div class="row g-3" style="max-width: 700px;">
-          <div class="col-12">
-            <small class="text-muted">Geser penanda (marker) atau klik lokasi kantor pada peta untuk memperbarui koordinat radius absensi 100 meter.</small>
-          </div>
-          <div class="col-md-6"><label class="form-label small fw-bold">Latitude Pusat</label><input type="text" id="set-lat" class="form-control" readonly></div>
-          <div class="col-md-6"><label class="form-label small fw-bold">Longitude Pusat</label><input type="text" id="set-lng" class="form-control" readonly></div>
-          <div class="col-12">
-            <div id="admin-map"></div>
-          </div>
-          <div class="col-12">
-            <button id="btn-update-location" class="btn btn-success fw-bold w-100" onclick="handleUpdateLocation()">
-              <i class="fa-solid fa-map-pin me-1"></i> Perbarui Koordinat Peta
-            </button>
+        <div class="row g-2" style="max-width: 600px;">
+          <div class="col-6"><label class="form-label small fw-bold mb-0">Latitude</label><input type="text" id="set-lat" class="form-control form-control-sm" readonly></div>
+          <div class="col-6"><label class="form-label small fw-bold mb-0">Longitude</label><input type="text" id="set-lng" class="form-control form-control-sm" readonly></div>
+          <div class="col-12"><div id="admin-map" style="height: 250px; border-radius: 10px;"></div></div>
+          <div class="col-12 mt-2">
+            <button id="btn-update-location" class="btn btn-success btn-sm fw-bold w-100" onclick="handleUpdateLocation()">Perbarui Koordinat Kantor</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-</div>
-
-<!-- MODAL EDIT USER -->
-<div class="modal fade" id="modalEditUser" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-2"></i>Edit Data User</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="form-edit-user" onsubmit="event.preventDefault(); handleSaveEditUser();">
-          <input type="hidden" id="edit-username">
-          <div class="mb-2">
-            <label class="form-label small fw-bold">Nama Lengkap</label>
-            <input type="text" id="edit-nama" class="form-control" required>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-bold">Password Baru (Opsional)</label>
-            <input type="password" id="edit-password" class="form-control" placeholder="Biarkan kosong jika tidak diubah">
-          </div>
-          <div class="row g-2 mb-2">
-            <div class="col-6">
-              <label class="form-label small fw-bold">Role</label>
-              <select id="edit-role" class="form-select">
-                <option value="user">User / PKL</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-bold">Bebas Radius</label>
-              <select id="edit-bebas" class="form-select">
-                <option value="false">Tidak (Wajib Radius)</option>
-                <option value="true">Ya (Bebas Radius)</option>
-              </select>
-            </div>
-          </div>
-          <div class="row g-2 mb-2">
-            <div class="col-6">
-              <label class="form-label small fw-bold">Mulai PKL</label>
-              <input type="date" id="edit-mulai" class="form-control" onchange="autoUpdateTotalDays('edit-mulai', 'edit-selesai', 'edit-total-hari')">
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-bold">Selesai PKL</label>
-              <input type="date" id="edit-selesai" class="form-control" onchange="autoUpdateTotalDays('edit-mulai', 'edit-selesai', 'edit-total-hari')">
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold">Total Target Hari Kerja (Otomatis)</label>
-            <input type="number" id="edit-total-hari" class="form-control bg-light" readonly>
-          </div>
-          <button type="submit" class="btn btn-primary w-100 fw-bold">
-            <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Perubahan
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL EDIT JADWAL -->
-<div class="modal fade" id="modalEditSchedule" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title fw-bold"><i class="fa-solid fa-calendar-pen me-2"></i>Edit Jadwal Kerja</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="form-edit-schedule" onsubmit="event.preventDefault(); handleSaveEditSchedule();">
-          <input type="hidden" id="edit-sch-row">
-          <div class="mb-2">
-            <label class="form-label small fw-bold">User</label>
-            <input type="text" id="edit-sch-user" class="form-control bg-light" readonly>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-bold">Tanggal Kerja</label>
-            <input type="date" id="edit-sch-date" class="form-control" required>
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-bold">Shift</label>
-            <select id="edit-sch-shift" class="form-select">
-              <option value="PAGI">Shift Pagi (08.15 - 16.00)</option>
-              <option value="SIANG">Shift Siang (12.15 - 20.00)</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold">Catatan / Tugas</label>
-            <input type="text" id="edit-sch-note" class="form-control">
-          </div>
-          <button type="submit" class="btn btn-primary w-100 fw-bold">
-            <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Perubahan Jadwal
-          </button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL DETAIL USER INDIVIDUAL -->
-<div class="modal fade" id="modalDetailUser" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title fw-bold" id="modalDetailUserTitle"><i class="fa-solid fa-user-clock me-2"></i>Detail Riwayat Absensi</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-3">
-        <div class="table-responsive">
-          <table class="table table-striped table-hover align-middle small border">
-            <thead class="table-light">
-              <tr>
-                <th>Tanggal</th>
-                <th>Masuk</th>
-                <th>Pulang</th>
-                <th>Status</th>
-                <th>Keterlambatan</th>
-                <th>Kegiatan / Alasan</th>
-                <th>Foto Selfie</th>
-              </tr>
-            </thead>
-            <tbody id="table-detail-history-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL VIEWER FOTO -->
-<div class="modal fade" id="modalPhotoViewer" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-body text-center p-2">
-        <img id="img-viewer-src" src="" class="img-fluid rounded" alt="Foto Absen">
-      </div>
-    </div>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-<script>
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxfBM0RYlkcnovG1DxEiQwGaM6QI7DIsfLcrm-BKhPe4ZdCR5wKLcFC54el68e9J1aEdQ/exec";
-
-  const HOLIDAYS_LIST = [
-    "2026-01-01", "2026-01-16", "2026-02-16", "2026-02-17", "2026-03-18", 
-    "2026-03-19", "2026-03-20", "2026-03-21", "2026-03-22", "2026-03-23", 
-    "2026-03-24", "2026-04-03", "2026-04-05", "2026-05-01", "2026-05-14", 
-    "2026-05-15", "2026-05-27", "2026-05-28", "2026-05-31", "2026-06-01", 
-    "2026-06-16", "2026-08-17", "2026-08-25", "2026-12-24", "2026-12-25",
-    "2027-01-01", "2027-01-05", "2027-02-05", "2027-02-06", "2027-03-08", "2027-03-09", 
-    "2027-03-10", "2027-03-11", "2027-03-12", "2027-03-15", "2027-03-25", "2027-03-28", 
-    "2027-05-01", "2027-05-06", "2027-05-17", "2027-05-18", "2027-05-19", "2027-05-20", 
-    "2027-06-01", "2027-06-06", "2027-08-15", "2027-08-17", "2027-12-24", "2027-12-25", "2027-12-26",
-    "2028-01-01", "2028-01-26", "2028-04-14", "2028-05-01", "2028-05-25", 
-    "2028-06-01", "2028-08-17", "2028-12-14", "2028-12-25"
-  ];
-
-  let currentUser = null;
-  let targetLocation = null;
-  let capturedBase64 = "";
-  let rawAllDetails = []; 
-  let activeUserList = [];
-  let allSchedulesList = [];
-
-  let adminMap = null;
-  let adminMarker = null;
-  let adminCircle = null;
-
-  setInterval(() => {
-    const now = new Date();
-    document.getElementById('current-time').innerText = now.toLocaleTimeString('id-ID');
-    document.getElementById('current-date').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  }, 1000);
-
-  function showLoading(msg = 'Memproses data...') {
-    document.getElementById('loading-text').innerText = msg;
-    document.getElementById('loading-overlay').classList.remove('d-none');
-  }
-
-  function hideLoading() {
-    document.getElementById('loading-overlay').classList.add('d-none');
-  }
-
-  function calcWorkingDays(startDateStr, endDateStr) {
-    if (!startDateStr || !endDateStr) return 0;
-    
-    let start = new Date(startDateStr);
-    let end = new Date(endDateStr);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0;
-
-    let count = 0;
-    let cur = new Date(start);
-
-    while (cur <= end) {
-      let dayOfWeek = cur.getDay(); 
-      let yyyy = cur.getFullYear();
-      let mm = String(cur.getMonth() + 1).padStart(2, '0');
-      let dd = String(cur.getDate()).padStart(2, '0');
-      let dateStr = `${yyyy}-${mm}-${dd}`;
-
-      if (dayOfWeek !== 0 && dayOfWeek !== 6 && !HOLIDAYS_LIST.includes(dateStr)) {
-        count++;
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-    return count;
-  }
-
-  function autoUpdateTotalDays(startElemId, endElemId, targetElemId) {
-    const startVal = document.getElementById(startElemId).value;
-    const endVal = document.getElementById(endElemId).value;
-    const targetInput = document.getElementById(targetElemId);
-
-    if (startVal && endVal) {
-      const totalDays = calcWorkingDays(startVal, endVal);
-      targetInput.value = totalDays;
-    }
-  }
-
-  function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  // API bridge untuk frontend GitHub Pages -> Google Apps Script Web App.
-  // Jangan tambahkan header application/json: itu dapat memicu CORS preflight.
-  // Body dikirim sebagai text/plain berisi JSON; doPost(e) tetap membaca e.postData.contents.
-  async function callAppsScript(action, payload = {}) {
-    if (!WEB_APP_URL || !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(WEB_APP_URL)) {
-      return { success: false, message: 'URL backend Apps Script belum benar. Periksa WEB_APP_URL di index.html.' };
-    }
-
-    try {
-      const response = await fetch(WEB_APP_URL, {
-        method: 'POST',
-        mode: 'cors',
-        credentials: 'omit',
-        redirect: 'follow',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-        body: JSON.stringify({ action, ...payload })
-      });
-
-      const responseText = await response.text();
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (_) {
-        console.error('Respons backend bukan JSON:', responseText.slice(0, 300));
-        return {
-          success: false,
-          message: 'Backend tidak mengirim JSON. Pastikan URL /exec benar dan Web App sudah di-deploy dengan akses yang sesuai.'
-        };
-      }
-
-      if (!response.ok) {
-        return { success: false, message: result.message || `Server merespons HTTP ${response.status}.` };
-      }
-      return result;
-    } catch (error) {
-      console.error('API Error:', error);
-      return {
-        success: false,
-        message: 'Gagal membaca respons backend. Periksa URL /exec, izin deployment, dan Console browser. Jika Console menampilkan CORS, Apps Script tidak mengizinkan respons lintas origin; perubahan frontend saja tidak dapat menambahkan header CORS.'
-      };
-    }
-  }
-
-  function toggleAuthMode(mode) {
-    document.getElementById('auth-alert').innerHTML = '';
-    if (mode === 'register') {
-      document.getElementById('form-login').classList.add('d-none');
-      document.getElementById('form-register').classList.remove('d-none');
-      document.getElementById('auth-subtitle').innerText = 'Pendaftaran Akun PKL Baru';
-    } else {
-      document.getElementById('form-register').classList.add('d-none');
-      document.getElementById('form-login').classList.remove('d-none');
-      document.getElementById('auth-subtitle').innerText = 'Silakan masuk ke akun Anda';
-    }
-  }
-
-  async function handleLogin() {
-    const u = document.getElementById('login-username').value;
-    const p = document.getElementById('login-password').value;
-
-    showLoading('Sedang memverifikasi akun...');
-    const res = await callAppsScript('login', { username: u, password: p });
-    hideLoading();
-
-    if (res.success) {
-      currentUser = res.user;
-      document.getElementById('view-auth').classList.add('d-none');
-      if (currentUser.role === 'admin') {
-        showAdminView();
-      } else {
-        showUserView();
-      }
-    } else {
-      document.getElementById('auth-alert').innerHTML = `<div class="alert alert-danger py-2 small">${res.message}</div>`;
-    }
-  }
-
-  async function handleRegister() {
-    const userData = {
-      nama: document.getElementById('reg-nama').value,
-      username: document.getElementById('reg-username').value,
-      password: document.getElementById('reg-password').value,
-      tglMulai: document.getElementById('reg-mulai').value,
-      tglSelesai: document.getElementById('reg-selesai').value,
-      jenisPKL: document.getElementById('reg-jenis-pkl').value,
-      totalHari: document.getElementById('reg-totalhari').value
-    };
-
-    showLoading('Mengirim pendaftaran akun...');
-    const res = await callAppsScript('register', { userData });
-    hideLoading();
-
-    if (res.success) {
-      document.getElementById('auth-alert').innerHTML = `<div class="alert alert-success py-2 small">${res.message}</div>`;
-      toggleAuthMode('login');
-      document.getElementById('form-register').reset();
-    } else {
-      document.getElementById('auth-alert').innerHTML = `<div class="alert alert-danger py-2 small">${res.message}</div>`;
-    }
-  }
-
-  function showUserView() {
-    document.getElementById('view-user').classList.remove('d-none');
-    document.getElementById('user-welcome').innerText = currentUser.nama;
-    loadTodayAttendance();
-    fetchLocationSettings();
-    handleAbsenTypeChange();
-  }
-
-  async function loadMyAttendanceHistory() {
-    const tbody = document.getElementById('table-my-attendance-body');
-    const summary = document.getElementById('my-attendance-summary');
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Memuat riwayat absensi...</td></tr>';
-    const res = await callAppsScript('getMyAttendanceHistory', { username: currentUser.username });
-    const rows = res && res.success ? (res.data || []) : [];
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada riwayat absensi.</td></tr>'; summary.textContent = ''; return; }
-    const hadir = rows.filter(r => ['HADIR','MASUK'].includes(String(r.status).toUpperCase())).length;
-    const izin = rows.filter(r => String(r.status).toUpperCase() === 'IZIN').length;
-    const sakit = rows.filter(r => String(r.status).toUpperCase() === 'SAKIT').length;
-    summary.textContent = `Total catatan: ${rows.length} • Hadir: ${hadir} • Izin: ${izin} • Sakit: ${sakit}`;
-    tbody.innerHTML = rows.map(r => `<tr><td>${r.tanggal || '-'}</td><td>${r.jamMasuk || '-'}</td><td>${r.jamPulang || '-'}</td><td><span class="badge ${String(r.status).toUpperCase()==='HADIR'?'bg-success':String(r.status).toUpperCase()==='IZIN'?'bg-warning text-dark':String(r.status).toUpperCase()==='SAKIT'?'bg-danger':'bg-secondary'}">${r.status || '-'}</span></td><td>${r.kegiatan || '-'}</td><td>${r.keterlambatan || '-'}</td></tr>`).join('');
-  }
-
-  async function loadMySchedule() {
-    const tbody = document.getElementById('table-my-schedule-body');
-    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat jadwal Anda...</td></tr>';
-
-    const res = await callAppsScript('getUserSchedule', { username: currentUser.username });
-    const schedules = res.data || [];
-
-    tbody.innerHTML = '';
-    if (schedules.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Belum ada jadwal shift yang terdaftar untuk Anda.</td></tr>';
-      return;
-    }
-
-    schedules.forEach(s => {
-      let badgeShift = s.shift === 'PAGI' ? '<span class="badge bg-primary">Shift Pagi (08:15)</span>' : '<span class="badge bg-dark">Shift Siang (12:15)</span>';
-      tbody.innerHTML += `
-        <tr>
-          <td><i class="fa-regular fa-calendar me-1 text-muted"></i> ${s.tanggal}</td>
-          <td>${badgeShift}</td>
-          <td><small class="text-secondary">${s.catatan || '-'}</small></td>
-        </tr>
-      `;
-    });
-  }
-
-  function openNativeCamera() {
-    document.getElementById('input-native-camera').click();
-  }
-
-  function previewFotoFromCamera(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        capturedBase64 = e.target.result;
-        const img = document.getElementById('preview-img');
-        const placeholder = document.getElementById('placeholder-box');
-        
-        img.src = capturedBase64;
-        img.classList.remove('d-none');
-        placeholder.classList.add('d-none');
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  function handleShiftChange() {
-    const shift = document.getElementById('absen-shift').value;
-    if (shift === 'SIANG') {
-      alert("Shift Siang (12:15 - 20:00): Anda dapat melakukan absen tanpa pembatasan radius lokasi GPS.");
-    } else {
-      alert("Shift Pagi (08:15 - 16:00): Wajib berada di lokasi kantor (radius 100 meter).");
-    }
-  }
-
-  function handleAbsenTypeChange() {
-    const tipe = document.getElementById('absen-tipe').value;
-    const cameraSection = document.getElementById('wrapper-camera-section');
-    const groupKegiatan = document.getElementById('group-kegiatan');
-    const groupKeterangan = document.getElementById('group-keterangan');
-
-    if (tipe === 'IZIN' || tipe === 'SAKIT') {
-      cameraSection.classList.add('d-none');
-      groupKegiatan.classList.add('d-none');
-      groupKeterangan.classList.remove('d-none');
-    } else if (tipe === 'PULANG') {
-      cameraSection.classList.remove('d-none');
-      groupKegiatan.classList.remove('d-none');
-      groupKeterangan.classList.add('d-none');
-    } else {
-      cameraSection.classList.remove('d-none');
-      groupKegiatan.classList.add('d-none');
-      groupKeterangan.classList.add('d-none');
-    }
-  }
-
-  async function loadTodayAttendance() {
-    const container = document.getElementById('today-records-container');
-    container.innerHTML = `<p class="text-muted small text-center"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat data...</p>`;
-
-    const res = await callAppsScript('getTodayAttendance', { username: currentUser.username });
-    const records = res.records;
-
-    if (!records) {
-      container.innerHTML = `<p class="text-muted small text-center">Belum ada catatan absen hari ini.</p>`;
-      return;
-    }
-
-    let badgeColor = "bg-primary";
-    if (records.status === "PULANG") badgeColor = "bg-dark";
-    if (records.status === "IZIN") badgeColor = "bg-warning text-dark";
-    if (records.status === "SAKIT") badgeColor = "bg-danger";
-
-    let keterlambatanBadge = records.keterlambatan && records.keterlambatan.includes('Telat') 
-      ? `<span class="badge bg-danger ms-1">${records.keterlambatan}</span>` 
-      : `<span class="badge bg-success ms-1">${records.keterlambatan}</span>`;
-
-    container.innerHTML = `
-      <div class="d-flex flex-column gap-2">
-        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded-3 border">
-          <div>
-            <span class="badge ${badgeColor} me-1">${records.status}: ${records.jamMasuk !== '-' ? records.jamMasuk : 'Izin/Sakit'}</span>
-            ${records.jamPulang && records.jamPulang !== '-' ? `<span class="badge bg-dark me-1">PULANG: ${records.jamPulang}</span>` : ''}
-            ${records.status === 'HADIR' ? keterlambatanBadge : ''}
-            <div class="small text-muted mt-1">Kegiatan/Ket: ${records.kegiatan !== '-' ? records.kegiatan : 'Belum diisi'}</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function processAbsen() {
-    const tipe = document.getElementById('absen-tipe').value;
-    const shift = document.getElementById('absen-shift').value;
-    const username = currentUser ? currentUser.username : '';
-
-    if (!username) {
-      alert("Sesi Anda habis. Silakan login ulang.");
-      logout();
-      return;
-    }
-
-    showLoading('Mengecek status presensi & jadwal...');
-
-    if (tipe === 'IZIN' || tipe === 'SAKIT') {
-      const ket = document.getElementById('absen-keterangan').value.trim();
-      if (!ket) {
-        hideLoading();
-        alert(`Harap isi keterangan / alasan ${tipe}!`);
-        return;
-      }
-      executeSubmitAbsen(tipe, shift, ket);
-      return;
-    }
-
-    callAppsScript('getTodayAttendance', { username: username }).then(res => {
-      const records = res.records;
-      
-      if (tipe === 'PULANG') {
-        if (!records || records.jamMasuk === '-') {
-          hideLoading();
-          alert("Anda belum melakukan Absen MASUK hari ini!");
-          return;
-        }
-        if (records.jamPulang && records.jamPulang !== '-') {
-          hideLoading();
-          alert("Anda sudah melakukan Absen PULANG hari ini!");
-          return;
-        }
-      } else if (tipe === 'MASUK') {
-        if (records && records.jamMasuk && records.jamMasuk !== '-') {
-          hideLoading();
-          alert("Anda sudah melakukan Absen MASUK hari ini!");
-          return;
-        }
-      }
-
-      const isShiftSiangBebas = (shift === 'SIANG');
-      const wajibRadius = !currentUser.bebasLokasi && !isShiftSiangBebas;
-
-      if (wajibRadius && (tipe === 'MASUK' || tipe === 'PULANG')) {
-        if (!navigator.geolocation) {
-          hideLoading();
-          alert("Browser Anda tidak mendukung GPS.");
-          return;
-        }
-        showLoading('Mengambil koordinat lokasi GPS...');
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, targetLocation.lat, targetLocation.lng);
-            if (dist > 100) {
-              hideLoading();
-              alert(`Absen ditolak! Posisi Anda terlalu jauh (${Math.round(dist)}m dari kantor). Shift Pagi wajib berada dalam radius 100m.`);
-            } else {
-              executeSubmitAbsen(tipe, shift, document.getElementById('absen-kegiatan').value);
-            }
-          },
-          err => {
-            hideLoading();
-            alert("Gagal mengakses lokasi GPS. Pastikan izin lokasi/GPS pada perangkat Anda aktif!");
-          }
-        );
-      } else {
-        executeSubmitAbsen(tipe, shift, document.getElementById('absen-kegiatan').value);
-      }
-    });
-  }
-
-  async function executeSubmitAbsen(tipe, shift, textDetail) {
-    if ((tipe === 'MASUK' || tipe === 'PULANG') && !capturedBase64) {
-      hideLoading();
-      alert("Harap ambil foto selfie menggunakan kamera terlebih dahulu!");
-      return;
-    }
-
-    showLoading('Mengunggah & memvalidasi jadwal...');
-
-    const payload = {
-      username: currentUser.username,
-      nama: currentUser.nama,
-      tipe: tipe,
-      shift: shift,
-      kegiatan: tipe === 'PULANG' ? textDetail : '',
-      keterangan: (tipe === 'IZIN' || tipe === 'SAKIT') ? textDetail : '',
-      fotoDataUrl: capturedBase64
-    };
-
-    const res = await callAppsScript('submitAttendance', { payload });
-    hideLoading();
-    
-    alert(res.message);
-    
-    if (res.success) {
-      document.getElementById('absen-kegiatan').value = '';
-      document.getElementById('absen-keterangan').value = '';
-      capturedBase64 = "";
-      document.getElementById('preview-img').classList.add('d-none');
-      document.getElementById('placeholder-box').classList.remove('d-none');
-      loadTodayAttendance();
-    }
-  }
-
-  function showAdminView() {
-    document.getElementById('view-admin').classList.remove('d-none');
-    loadAdminDashboard();
-    loadPendingUsers();
-    fetchLocationSettings();
-  }
-
-  async function fetchLocationSettings() {
-    const res = await callAppsScript('getLocation');
-    if (res.success) {
-      targetLocation = res.location;
-      if (document.getElementById('set-lat')) document.getElementById('set-lat').value = targetLocation.lat;
-      if (document.getElementById('set-lng')) document.getElementById('set-lng').value = targetLocation.lng;
-    }
-  }
-
-  function initAdminMap() {
-    fetchLocationSettings();
-    setTimeout(() => {
-      const defaultLat = targetLocation && targetLocation.lat !== 0 ? targetLocation.lat : -6.200000;
-      const defaultLng = targetLocation && targetLocation.lng !== 0 ? targetLocation.lng : 106.816666;
-
-      document.getElementById('set-lat').value = defaultLat;
-      document.getElementById('set-lng').value = defaultLng;
-
-      if (!adminMap) {
-        adminMap = L.map('admin-map').setView([defaultLat, defaultLng], 16);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(adminMap);
-
-        adminMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(adminMap);
-        adminCircle = L.circle([defaultLat, defaultLng], { radius: 100, color: 'blue', fillColor: '#f03', fillOpacity: 0.2 }).addTo(adminMap);
-
-        adminMarker.on('dragend', function(e) {
-          const pos = adminMarker.getLatLng();
-          document.getElementById('set-lat').value = pos.lat.toFixed(6);
-          document.getElementById('set-lng').value = pos.lng.toFixed(6);
-          adminCircle.setLatLng(pos);
-        });
-
-        adminMap.on('click', function(e) {
-          adminMarker.setLatLng(e.latlng);
-          document.getElementById('set-lat').value = e.latlng.lat.toFixed(6);
-          document.getElementById('set-lng').value = e.latlng.lng.toFixed(6);
-          adminCircle.setLatLng(e.latlng);
-        });
-      } else {
-        adminMap.setView([defaultLat, defaultLng], 16);
-        adminMarker.setLatLng([defaultLat, defaultLng]);
-        adminCircle.setLatLng([defaultLat, defaultLng]);
-        adminMap.invalidateSize();
-      }
-    }, 300);
-  }
-
-  async function loadAdminDashboard() {
-    const tbody = document.getElementById('table-rekap-body');
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat rekapitulasi user active...</td></tr>';
-
-    const res = await callAppsScript('getAdminDashboard');
-    const data = res.data;
-    activeUserList = data || [];
-
-    tbody.innerHTML = '';
-    if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Belum ada user/siswa PKL aktif.</td></tr>';
-      return;
-    }
-
-    data.forEach(u => {
-      let progressColor = "bg-danger";
-      if (u.persentase >= 80) progressColor = "bg-success";
-      else if (u.persentase >= 50) progressColor = "bg-warning";
-
-      const row = `<tr>
-        <td>
-          <b>${u.nama}</b><br>
-          <small class="text-muted">@${u.username}</small>
-        </td>
-        <td><small class="text-muted">${u.tglMulai} s/d ${u.tglSelesai}</small></td>
-        <td>
-          <span class="badge bg-success" title="Masuk/Hadir">M: ${u.summary.masuk}</span>
-          <span class="badge bg-warning text-dark" title="Izin">I: ${u.summary.izin}</span>
-          <span class="badge bg-danger" title="Sakit">S: ${u.summary.sakit}</span>
-        </td>
-        <td>
-          <span class="badge ${u.summary.totalTelatMenit > 0 ? 'bg-danger' : 'bg-success'}">
-            ${u.summary.totalTelatMenit > 0 ? u.summary.totalTelatMenit + ' Menit' : 'Tepat Waktu'}
-          </span>
-        </td>
-        <td style="width: 140px;">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <small class="fw-bold">${u.persentase}%</small>
-          </div>
-          <div class="progress" style="height: 8px;">
-            <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${u.persentase}%;"></div>
-          </div>
-        </td>
-        <td>
-          <div class="btn-group btn-group-sm">
-            <button class="btn btn-outline-primary fw-bold" onclick="showUserDetailModal('${u.username}', '${u.nama}')" title="Detail Riwayat">
-              <i class="fa-solid fa-eye"></i>
-            </button>
-            <button class="btn btn-outline-warning fw-bold text-dark" onclick="openEditUserModal('${u.username}')" title="Edit User">
-              <i class="fa-solid fa-pen"></i> Edit
-            </button>
-          </div>
-        </td>
-      </tr>`;
-      tbody.innerHTML += row;
-    });
-  }
-
-  function openEditUserModal(username) {
-    const user = activeUserList.find(u => u.username === username);
-    if (!user) return;
-
-    document.getElementById('edit-username').value = user.username;
-    document.getElementById('edit-nama').value = user.nama;
-    document.getElementById('edit-role').value = user.role || 'user';
-    document.getElementById('edit-bebas').value = user.bebasLokasi ? 'true' : 'false';
-    document.getElementById('edit-mulai').value = user.tglMulai !== '-' ? user.tglMulai : '';
-    document.getElementById('edit-selesai').value = user.tglSelesai !== '-' ? user.tglSelesai : '';
-    document.getElementById('edit-total-hari').value = user.totalHariPKL || calcWorkingDays(user.tglMulai, user.tglSelesai);
-
-    const modal = new bootstrap.Modal(document.getElementById('modalEditUser'));
-    modal.show();
-  }
-
-  async function handleSaveEditUser() {
-    const userData = {
-      username: document.getElementById('edit-username').value,
-      nama: document.getElementById('edit-nama').value,
-      password: document.getElementById('edit-password').value,
-      role: document.getElementById('edit-role').value,
-      bebasLokasi: document.getElementById('edit-bebas').value === 'true',
-      tglMulai: document.getElementById('edit-mulai').value,
-      tglSelesai: document.getElementById('edit-selesai').value,
-      totalHari: document.getElementById('edit-total-hari').value,
-      status: 'active'
-    };
-
-    showLoading('Memperbarui data user...');
-    const res = await callAppsScript('updateUser', { userData });
-    hideLoading();
-    
-    alert(res.message);
-
-    if (res.success) {
-      bootstrap.Modal.getInstance(document.getElementById('modalEditUser')).hide();
-      loadAdminDashboard();
-    }
-  }
-
-  function loadJadwalSection() {
-    const select = document.getElementById('schedule-user');
-    const containerCheckboxes = document.getElementById('gen-user-checkboxes');
-    
-    select.innerHTML = '';
-    containerCheckboxes.innerHTML = '';
-
-    if (!activeUserList || activeUserList.length === 0) {
-      select.innerHTML = '<option value="">Tidak ada user aktif</option>';
-      containerCheckboxes.innerHTML = '<small class="text-muted">Tidak ada user aktif</small>';
-      return;
-    }
-
-    activeUserList.forEach(u => {
-      select.innerHTML += `<option value="${u.username}">${u.nama} (@${u.username})</option>`;
-      containerCheckboxes.innerHTML += `
-        <div class="form-check form-check-sm">
-          <input class="form-check-input gen-user-checkbox" type="checkbox" value="${u.username}" data-nama="${u.nama}" id="chk-user-${u.username}" checked>
-          <label class="form-check-label small" for="chk-user-${u.username}">
-            ${u.nama} (@${u.username})
-          </label>
-        </div>
-      `;
-    });
-  }
-
-  function toggleAllUsers(status) {
-    const checkboxes = document.querySelectorAll('.gen-user-checkbox');
-    checkboxes.forEach(chk => {
-      chk.checked = status;
-    });
-  }
-
-  async function handleCreateSchedule() {
-    const userSelect = document.getElementById('schedule-user');
-    const scheduleData = {
-      username: userSelect.value,
-      nama: userSelect.options[userSelect.selectedIndex] ? userSelect.options[userSelect.selectedIndex].text.split(' (')[0] : '',
-      tanggal: document.getElementById('schedule-date').value,
-      shift: document.getElementById('schedule-shift').value,
-      catatan: document.getElementById('schedule-note').value
-    };
-
-    if (!scheduleData.tanggal) {
-      alert("Harap pilih tanggal kerja!");
-      return;
-    }
-
-    showLoading('Menyimpan jadwal shift...');
-    const res = await callAppsScript('createSchedule', { scheduleData });
-    hideLoading();
-    
-    alert(res.message);
-    if (res.success) loadAllSchedules();
-  }
-
-  async function handleGenerateRandomSchedule() {
-    const startDate = document.getElementById('gen-start-date').value;
-    const endDate = document.getElementById('gen-end-date').value;
-    const shift1Quota = document.getElementById('gen-shift1-quota').value;
-    const shift2Quota = document.getElementById('gen-shift2-quota').value;
-    
-    const checkboxes = document.querySelectorAll('.gen-user-checkbox:checked');
-    let users = [];
-    checkboxes.forEach(chk => {
-      users.push({ username: chk.value, nama: chk.getAttribute('data-nama') });
-    });
-
-    if (!startDate || !endDate) {
-      alert("Harap tentukan Tanggal Mulai dan Tanggal Selesai!");
-      return;
-    }
-    if (users.length === 0) {
-      alert("Pilih minimal satu user!");
-      return;
-    }
-    if ((parseInt(shift1Quota) || 0) + (parseInt(shift2Quota) || 0) <= 0) {
-      alert("Tentukan jumlah kuota orang per hari untuk minimal salah satu shift!");
-      return;
-    }
-
-    showLoading('Men-generate & mengacak jadwal shift...');
-    const res = await callAppsScript('generateRandomSchedule', { 
-      payload: { 
-        startDate, 
-        endDate, 
-        users, 
-        shift1Quota: parseInt(shift1Quota) || 0,
-        shift2Quota: parseInt(shift2Quota) || 0
-      } 
-    });
-    hideLoading();
-
-    alert(res.message);
-    if (res.success) loadAllSchedules();
-  }
-
-  function downloadScheduleTemplate() {
-    let csvContent = "data:text/csv;charset=utf-8,tanggal,username,nama,shift,catatan\n2026-06-01,budi123,Budi Santoso,PAGI,Piket Utama\n2026-06-01,ani456,Ani Wijaya,SIANG,Tugas Tambahan";
-    let encodedUri = encodeURI(csvContent);
-    let link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "Template_Upload_Jadwal.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  function handleUploadScheduleFile() {
-    const fileInput = document.getElementById('file-schedule-csv');
-    if (!fileInput.files || fileInput.files.length === 0) {
-      alert("Pilih file CSV terlebih dahulu!");
-      return;
-    }
-
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    
-    showLoading('Membaca dan memproses file CSV...');
-    reader.onload = async function(e) {
-      const text = e.target.result;
-      const lines = text.split('\n');
-      let schedules = [];
-
-      for (let i = 1; i < lines.length; i++) {
-        let line = lines[i].trim();
-        if (!line) continue;
-        let cols = line.split(',');
-        if (cols.length >= 4) {
-          schedules.push({
-            tanggal: cols[0].trim(),
-            username: cols[1].trim(),
-            nama: cols[2].trim(),
-            shift: cols[3].trim().toUpperCase(),
-            catatan: cols[4] ? cols[4].trim() : '-'
-          });
-        }
-      }
-
-      if (schedules.length === 0) {
-        hideLoading();
-        alert("Format file tidak valid atau kosong.");
-        return;
-      }
-
-      showLoading(`Mengimpor ${schedules.length} jadwal...`);
-      const res = await callAppsScript('uploadScheduleBulk', { schedules });
-      hideLoading();
-
-      alert(res.message);
-      if (res.success) {
-        fileInput.value = '';
-        loadAllSchedules();
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  async function loadAllSchedules() {
-    const tbody = document.getElementById('table-all-schedules-body');
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat daftar jadwal...</td></tr>';
-
-    const res = await callAppsScript('getAllSchedules');
-    allSchedulesList = res.data || [];
-
-    renderAdminSchedulesTable(allSchedulesList);
-  }
-
-  function renderAdminSchedulesTable(list) {
-    const tbody = document.getElementById('table-all-schedules-body');
-    tbody.innerHTML = '';
-
-    if (!list || list.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Belum ada jadwal yang dibuat.</td></tr>';
-      return;
-    }
-
-    list.forEach(s => {
-      let shiftBadge = s.shift === 'PAGI' 
-        ? '<span class="badge bg-primary">Shift Pagi (08:15)</span>' 
-        : '<span class="badge bg-dark">Shift Siang (12:15)</span>';
-
-      tbody.innerHTML += `
-        <tr>
-          <td><i class="fa-regular fa-calendar-days text-muted me-1"></i> ${s.tanggal}</td>
-          <td><b>${s.nama}</b><br><small class="text-muted">@${s.username}</small></td>
-          <td>${shiftBadge}</td>
-          <td><small class="text-secondary">${s.catatan}</small></td>
-          <td class="text-center">
-            <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-warning text-dark py-1 px-2" onclick="openEditScheduleModal(${s.rowIndex})" title="Edit Jadwal">
-                <i class="fa-solid fa-pen"></i>
-              </button>
-              <button class="btn btn-outline-danger py-1 px-2" onclick="handleDeleteSchedule(${s.rowIndex})" title="Hapus Jadwal">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `;
-    });
-  }
-
-  function filterAdminSchedules() {
-    const keyword = document.getElementById('filter-sch-search').value.toLowerCase();
-    const filtered = allSchedulesList.filter(s => 
-      s.nama.toLowerCase().includes(keyword) || 
-      s.username.toLowerCase().includes(keyword) || 
-      s.tanggal.includes(keyword) ||
-      s.shift.toLowerCase().includes(keyword)
-    );
-    renderAdminSchedulesTable(filtered);
-  }
-
-  function openEditScheduleModal(rowIndex) {
-    const sch = allSchedulesList.find(s => s.rowIndex === rowIndex);
-    if (!sch) return;
-
-    document.getElementById('edit-sch-row').value = sch.rowIndex;
-    document.getElementById('edit-sch-user').value = `${sch.nama} (@${sch.username})`;
-    document.getElementById('edit-sch-date').value = sch.tanggal;
-    document.getElementById('edit-sch-shift').value = sch.shift;
-    document.getElementById('edit-sch-note').value = sch.catatan;
-
-    const modal = new bootstrap.Modal(document.getElementById('modalEditSchedule'));
-    modal.show();
-  }
-
-  async function handleSaveEditSchedule() {
-    const scheduleData = {
-      rowIndex: document.getElementById('edit-sch-row').value,
-      tanggal: document.getElementById('edit-sch-date').value,
-      shift: document.getElementById('edit-sch-shift').value,
-      catatan: document.getElementById('edit-sch-note').value
-    };
-
-    showLoading('Memperbarui jadwal...');
-    const res = await callAppsScript('updateSchedule', { scheduleData });
-    hideLoading();
-
-    alert(res.message);
-    if (res.success) {
-      bootstrap.Modal.getInstance(document.getElementById('modalEditSchedule')).hide();
-      loadAllSchedules();
-    }
-  }
-
-  async function handleDeleteSchedule(rowIndex) {
-    if (!confirm("Apakah Anda yakin ingin menghapus jadwal ini?")) return;
-
-    showLoading('Menghapus jadwal...');
-    const res = await callAppsScript('deleteSchedule', { rowIndex });
-    hideLoading();
-
-    alert(res.message);
-    if (res.success) {
-      loadAllSchedules();
-    }
-  }
-
-  async function loadAllAttendanceDetails() {
-    const tbody = document.getElementById('table-detail-all-body');
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat detail riwayat absensi...</td></tr>';
-
-    const res = await callAppsScript('getAllAttendanceDetails');
-    rawAllDetails = res.data || [];
-
-    applyAttendanceFilters();
-  }
-
-  function applyAttendanceFilters() {
-    const search = document.getElementById('filter-search-name').value.toLowerCase();
-    const month = document.getElementById('filter-month').value;
-    const status = document.getElementById('filter-status').value;
-
-    const filtered = rawAllDetails.filter(r => {
-      const matchSearch = r.nama.toLowerCase().includes(search) || r.username.toLowerCase().includes(search);
-      const matchMonth = month === '' || (r.tanggal && r.tanggal.split('-')[1] === month);
-      const matchStatus = status === '' || r.status === status || (status === 'HADIR' && (r.status === 'MASUK' || r.status === 'HADIR'));
-      return matchSearch && matchMonth && matchStatus;
-    });
-
-    renderSummaryPerUser(filtered);
-
-    const tbody = document.getElementById('table-detail-all-body');
-    tbody.innerHTML = '';
-
-    if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Tidak ditemukan data absensi yang sesuai.</td></tr>';
-      return;
-    }
-
-    filtered.forEach(r => {
-      let fotoBtn = r.fotoUrl && r.fotoUrl.startsWith('http') 
-        ? `<button class="btn btn-xs btn-outline-info rounded-3 no-print" onclick="viewPhoto('${r.fotoUrl}')"><i class="fa-solid fa-image"></i> Foto</button>` 
-        : '-';
-
-      let statusBadge = `<span class="badge bg-success">${r.status}</span>`;
-      if (r.status === 'IZIN') statusBadge = `<span class="badge bg-warning text-dark">IZIN</span>`;
-      if (r.status === 'SAKIT') statusBadge = `<span class="badge bg-danger">SAKIT</span>`;
-
-      const row = `<tr>
-        <td>${r.tanggal}</td>
-        <td><b>${r.nama}</b><br><small class="text-muted">@${r.username}</small></td>
-        <td>${r.jamMasuk}</td>
-        <td>${r.jamPulang}</td>
-        <td>${statusBadge}</td>
-        <td><small>${r.keterlambatan}</small></td>
-        <td><small>${r.kegiatan}</small></td>
-        <td class="no-print">${fotoBtn}</td>
-      </tr>`;
-      tbody.innerHTML += row;
-    });
-  }
-
-  function renderSummaryPerUser(records) {
-    const summaryContainer = document.getElementById('container-rekap-summary-user');
-    summaryContainer.innerHTML = '';
-
-    let userMap = {};
-    records.forEach(r => {
-      if (!userMap[r.username]) {
-        userMap[r.username] = { nama: r.nama, masuk: 0, izin: 0, sakit: 0, telatMenit: 0 };
-      }
-      if (r.status === 'HADIR' || r.status === 'MASUK') userMap[r.username].masuk++;
-      if (r.status === 'IZIN') userMap[r.username].izin++;
-      if (r.status === 'SAKIT') userMap[r.username].sakit++;
-
-      if (r.keterlambatan && r.keterlambatan.includes('Telat')) {
-        let match = r.keterlambatan.match(/\d+/);
-        if (match) userMap[r.username].telatMenit += parseInt(match[0], 10);
-      }
-    });
-
-    const keys = Object.keys(userMap);
-    if (keys.length === 0) {
-      summaryContainer.innerHTML = '<div class="col-12 text-muted small">Tidak ada data rekap.</div>';
-      return;
-    }
-
-    keys.forEach(u => {
-      const item = userMap[u];
-      const card = `
-        <div class="col-md-4 col-sm-6">
-          <div class="p-2 border rounded bg-white shadow-sm">
-            <div class="fw-bold text-primary text-truncate">${item.nama} (@${u})</div>
-            <div class="d-flex justify-content-between align-items-center mt-1 small">
-              <div>
-                <span class="badge bg-success" title="Masuk">M: ${item.masuk}</span>
-                <span class="badge bg-warning text-dark" title="Izin">I: ${item.izin}</span>
-                <span class="badge bg-danger" title="Sakit">S: ${item.sakit}</span>
-              </div>
-              <small class="text-muted fw-bold">${item.telatMenit > 0 ? item.telatMenit + ' mnt telat' : 'Tepat waktu'}</small>
-            </div>
-          </div>
-        </div>
-      `;
-      summaryContainer.innerHTML += card;
-    });
-  }
-
-  function exportToExcel() {
-    let table = document.getElementById("table-all-details");
-    let rows = [];
-
-    for (let i = 0; i < table.rows.length; i++) {
-      let row = [], cols = table.rows[i].cells;
-      for (let j = 0; j < cols.length - 1; j++) {
-        let text = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/,/g, ";");
-        row.push('"' + text + '"');
-      }
-      rows.push(row.join(","));
-    }
-
-    let csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
-    let encodedUri = encodeURI(csvContent);
-    let link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "Rekap_Detail_Absensi_PKL.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  function printLaporan() {
-    window.print();
-  }
-
-  async function loadPendingUsers() {
-    const tbody = document.getElementById('table-approve-body');
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat antrean persetujuan...</td></tr>';
-
-    const res = await callAppsScript('getPendingUsers');
-    const data = res.data;
-
-    const badge = document.getElementById('badge-pending-count');
-    if (data && data.length > 0) {
-      badge.innerText = data.length;
-      badge.classList.remove('d-none');
-    } else {
-      badge.classList.add('d-none');
-    }
-
-    tbody.innerHTML = '';
-    if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Tidak ada antrean pendaftaran user baru.</td></tr>';
-      return;
-    }
-
-    data.forEach(u => {
-      const row = `<tr>
-        <td>
-          <b>${u.nama}</b><br>
-          <small class="text-muted">@${u.username}</small>
-        </td>
-        <td><small class="text-muted">${u.tglMulai} s/d ${u.tglSelesai}</small></td>
-        <td>${u.totalHari} Hari</td>
-        <td>
-          <button class="btn btn-sm btn-success fw-bold me-1" onclick="handleApproveUser('${u.username}', 'active', this)">
-            <i class="fa-solid fa-check me-1"></i> Approve
-          </button>
-          <button class="btn btn-sm btn-danger fw-bold" onclick="handleApproveUser('${u.username}', 'rejected', this)">
-            <i class="fa-solid fa-xmark me-1"></i> Tolak
-          </button>
-        </td>
-      </tr>`;
-      tbody.innerHTML += row;
-    });
-  }
-
-  async function handleApproveUser(username, targetStatus, btnElement) {
-    showLoading('Memproses approval user...');
-
-    const res = await callAppsScript('processUserApproval', { username, status: targetStatus });
-    hideLoading();
-
-    alert(res.message);
-    loadPendingUsers();
-    loadAdminDashboard();
-  }
-
-  async function showUserDetailModal(username, nama) {
-    document.getElementById('modalDetailUserTitle').innerText = `Detail Riwayat: ${nama} (@${username})`;
-    const tbody = document.getElementById('table-detail-history-body');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Memuat riwayat absensi...</td></tr>';
-
-    const modal = new bootstrap.Modal(document.getElementById('modalDetailUser'));
-    modal.show();
-
-    const res = await callAppsScript('getUserDetailHistory', { username });
-    const records = res.data;
-
-    tbody.innerHTML = '';
-    if (!records || records.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Belum ada riwayat absensi.</td></tr>';
-      return;
-    }
-
-    records.forEach(r => {
-      let fotoBtn = r.fotoUrl && r.fotoUrl.startsWith('http') 
-        ? `<button class="btn btn-xs btn-outline-info rounded-3" onclick="viewPhoto('${r.fotoUrl}')"><i class="fa-solid fa-image"></i> Lihat</button>` 
-        : '-';
-
-      const row = `<tr>
-        <td>${r.tanggal}</td>
-        <td>${r.jamMasuk}</td>
-        <td>${r.jamPulang}</td>
-        <td><span class="badge ${r.status === 'HADIR' ? 'bg-success' : 'bg-warning text-dark'}">${r.status}</span></td>
-        <td><small>${r.keterlambatan}</small></td>
-        <td><small>${r.kegiatan}</small></td>
-        <td>${fotoBtn}</td>
-      </tr>`;
-      tbody.innerHTML += row;
-    });
-  }
-
-  function viewPhoto(url) {
-    document.getElementById('img-viewer-src').src = url;
-    const modal = new bootstrap.Modal(document.getElementById('modalPhotoViewer'));
-    modal.show();
-  }
-
-  async function handleAddUser() {
-    const userData = {
-      username: document.getElementById('add-username').value,
-      password: document.getElementById('add-password').value,
-      nama: document.getElementById('add-nama').value,
-      role: document.getElementById('add-role').value,
-      jenisPKL: document.getElementById('add-jenis-pkl').value,
-      bebasLokasi: document.getElementById('add-bebas').value === 'true',
-      tglMulai: document.getElementById('add-mulai').value,
-      tglSelesai: document.getElementById('add-selesai').value,
-      totalHari: document.getElementById('add-total-hari').value
-    };
-
-    if (!userData.username || !userData.password) {
-      alert("Username dan Password wajib diisi!");
-      return;
-    }
-
-    showLoading('Menambahkan user baru...');
-    const res = await callAppsScript('addUser', { userData });
-    hideLoading();
-
-    alert(res.message);
-
-    document.getElementById('add-username').value = '';
-    document.getElementById('add-password').value = '';
-    document.getElementById('add-nama').value = '';
-    document.getElementById('add-total-hari').value = '';
-    loadAdminDashboard();
-  }
-
-  async function handleUpdateLocation() {
-    const lat = document.getElementById('set-lat').value;
-    const lng = document.getElementById('set-lng').value;
-
-    showLoading('Memperbarui koordinat lokasi kantor...');
-    const res = await callAppsScript('updateLocation', { lat, lng });
-    hideLoading();
-
-    alert(res.message);
-    fetchLocationSettings();
-  }
-
-  function logout() {
-    currentUser = null;
-    capturedBase64 = "";
-
-    document.getElementById('view-user').classList.add('d-none');
-    document.getElementById('view-admin').classList.add('d-none');
-
-    document.getElementById('view-auth').classList.remove('d-none');
-    toggleAuthMode('login');
-    document.getElementById('login-username').value = '';
-    document.getElementById('login-password').value = '';
-    document.getElementById('auth-alert').innerHTML = '';
-  }
-</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
 
 </body>
 </html>
