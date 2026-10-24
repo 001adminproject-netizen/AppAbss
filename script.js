@@ -1,4 +1,4 @@
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwmMqU6Cv2LuXowZmbe4hingZrYJJ6-puEBDQuYqhbpCa7c5Djr1d6EnUi6DSuc6BVkqQ/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzpSV_dfLIZONCvP0Z1lM6ru4XSfk6l9JAJhdJQoQQ8lCs2SB7cK7uOQpZQTJFxi7YtmQ/exec";
 
 let currentUser = null;
 let targetLocation = null;
@@ -11,6 +11,24 @@ let adminMap = null;
 let adminMarker = null;
 let adminCircle = null;
 
+document.addEventListener("DOMContentLoaded", () => {
+  const savedUser = localStorage.getItem('pkl_current_user');
+  if (savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+      document.getElementById('view-auth').classList.add('d-none');
+      if (currentUser.role === 'admin') {
+        showAdminView();
+      } else {
+        showUserView();
+      }
+    } catch (e) {
+      console.error("Gagal memuat sesi user:", e);
+      localStorage.removeItem('pkl_current_user');
+    }
+  }
+});
+
 setInterval(() => {
   const now = new Date();
   const timeElem = document.getElementById('current-time');
@@ -18,6 +36,29 @@ setInterval(() => {
   if (timeElem) timeElem.innerText = now.toLocaleTimeString('id-ID');
   if (dateElem) dateElem.innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 }, 1000);
+
+function formatIndonesianDate(dateStr) {
+  if (!dateStr || dateStr === '-') return '-';
+  if (dateStr.includes(',')) return dateStr;
+
+  try {
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+      return `${days[d.getDay()]}, ${String(day).padStart(2, '0')} ${months[month]} ${year}`;
+    }
+  } catch (e) {
+    console.error("Gagal format tanggal:", e);
+  }
+  return dateStr;
+}
 
 function showLoading(msg = 'Memproses data...') {
   document.getElementById('loading-text').innerText = msg;
@@ -74,6 +115,8 @@ async function handleLogin() {
 
   if (res.success) {
     currentUser = res.user;
+    localStorage.setItem('pkl_current_user', JSON.stringify(currentUser));
+
     document.getElementById('view-auth').classList.add('d-none');
     if (currentUser.role === 'admin') {
       showAdminView();
@@ -88,11 +131,11 @@ async function handleLogin() {
 async function handleRegister() {
   const userData = {
     nama: document.getElementById('reg-nama').value,
+    asalSekolah: document.getElementById('reg-asal-sekolah').value,
     username: document.getElementById('reg-username').value,
     password: document.getElementById('reg-password').value,
     tglMulai: document.getElementById('reg-mulai').value,
-    tglSelesai: document.getElementById('reg-selesai').value,
-    jenisPKL: document.getElementById('reg-jenis-pkl').value
+    tglSelesai: document.getElementById('reg-selesai').value
   };
 
   showLoading('Mengirim pendaftaran akun...');
@@ -111,6 +154,7 @@ async function handleRegister() {
 function showUserView() {
   document.getElementById('view-user').classList.remove('d-none');
   document.getElementById('user-welcome').innerText = currentUser.nama;
+  document.getElementById('user-school').innerText = currentUser.asalSekolah || "Siswa / Mahasiswa";
   loadTodayAttendance();
   fetchLocationSettings();
   handleAbsenTypeChange();
@@ -118,7 +162,12 @@ function showUserView() {
 
 function handleShiftChange() {
   const shift = document.getElementById('absen-shift').value;
-  if (shift === 'SIANG') {
+  const day = new Date().getDay();
+  const isWeekend = (day === 0 || day === 6);
+
+  if (isWeekend) {
+    alert("Absensi Akhir Pekan (Sabtu/Minggu): Bebas radius lokasi.");
+  } else if (shift === 'SIANG') {
     alert("Shift Siang (12:15): Bebas radius GPS.");
   } else {
     alert("Shift Pagi (08:15): Wajib radius 100m kantor.");
@@ -129,24 +178,16 @@ function handleAbsenTypeChange() {
   const tipe = document.getElementById('absen-tipe').value;
   const cameraSection = document.getElementById('wrapper-camera-section');
   const groupKegiatan = document.getElementById('group-kegiatan');
-  const groupKeterangan = document.getElementById('group-keterangan');
   const groupKeteranganMasuk = document.getElementById('group-keterangan-masuk');
 
-  if (tipe === 'IZIN' || tipe === 'SAKIT') {
-    cameraSection.classList.add('d-none');
-    groupKegiatan.classList.add('d-none');
-    groupKeteranganMasuk.classList.add('d-none');
-    groupKeterangan.classList.remove('d-none');
-  } else if (tipe === 'PULANG') {
+  if (tipe === 'PULANG') {
     cameraSection.classList.remove('d-none');
     groupKegiatan.classList.remove('d-none');
     groupKeteranganMasuk.classList.add('d-none');
-    groupKeterangan.classList.add('d-none');
   } else {
     cameraSection.classList.remove('d-none');
     groupKegiatan.classList.add('d-none');
     groupKeteranganMasuk.classList.remove('d-none');
-    groupKeterangan.classList.add('d-none');
   }
 }
 
@@ -181,17 +222,13 @@ function processAbsen() {
   let detailText = "";
   if (tipe === 'MASUK') detailText = document.getElementById('absen-keterangan-masuk').value.trim();
   if (tipe === 'PULANG') detailText = document.getElementById('absen-kegiatan').value.trim();
-  if (tipe === 'IZIN' || tipe === 'SAKIT') {
-    detailText = document.getElementById('absen-keterangan').value.trim();
-    if (!detailText) {
-      hideLoading();
-      return alert(`Keterangan alasan ${tipe} wajib diisi!`);
-    }
-    return executeSubmitAbsen(tipe, shift, detailText);
-  }
 
+  const today = new Date();
+  const dayOfWeek = today.getDay(); 
+  const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
   const isShiftSiangBebas = (shift === 'SIANG');
-  const wajibRadius = !currentUser.bebasLokasi && !isShiftSiangBebas;
+  
+  const wajibRadius = !currentUser.bebasLokasi && !isShiftSiangBebas && !isWeekend;
 
   if (wajibRadius && (tipe === 'MASUK' || tipe === 'PULANG')) {
     if (!navigator.geolocation) {
@@ -200,6 +237,10 @@ function processAbsen() {
     }
     navigator.geolocation.getCurrentPosition(
       pos => {
+        if (!targetLocation || !targetLocation.lat) {
+          executeSubmitAbsen(tipe, shift, detailText);
+          return;
+        }
         const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, targetLocation.lat, targetLocation.lng);
         if (dist > 100) {
           hideLoading();
@@ -232,7 +273,7 @@ async function executeSubmitAbsen(tipe, shift, textDetail) {
     tipe: tipe,
     shift: shift,
     kegiatan: tipe === 'PULANG' ? textDetail : '',
-    keterangan: (tipe === 'IZIN' || tipe === 'SAKIT' || tipe === 'MASUK') ? textDetail : '',
+    keterangan: tipe === 'MASUK' ? textDetail : '',
     fotoDataUrl: capturedBase64
   };
 
@@ -243,7 +284,6 @@ async function executeSubmitAbsen(tipe, shift, textDetail) {
   
   if (res.success) {
     document.getElementById('absen-kegiatan').value = '';
-    document.getElementById('absen-keterangan').value = '';
     document.getElementById('absen-keterangan-masuk').value = '';
     capturedBase64 = "";
     document.getElementById('preview-img').classList.add('d-none');
@@ -269,9 +309,74 @@ async function loadTodayAttendance() {
         <small class="fw-bold text-secondary">${records.keterlambatan}</small>
       </div>
       ${records.jamPulang && records.jamPulang !== '-' ? `<div class="mt-1"><span class="badge bg-dark">PULANG: ${records.jamPulang}</span></div>` : ''}
-      <div class="small text-muted mt-1"><b>Ket/Alasan:</b> ${records.alasan !== '-' ? records.alasan : records.kegiatan || '-'}</div>
+      <div class="small text-muted mt-1"><b>Ket/Laporan:</b> ${records.kegiatan || records.alasan || '-'}</div>
     </div>
   `;
+}
+
+async function handleSubmitCutiIzin() {
+  const tglMulai = document.getElementById('cuti-tgl-mulai').value;
+  const tglSelesai = document.getElementById('cuti-tgl-selesai').value;
+  const alasan = document.getElementById('cuti-alasan').value;
+  const fileInput = document.getElementById('cuti-file');
+  const file = fileInput.files[0];
+
+  if (!tglMulai || !tglSelesai) return alert("Pilih tanggal mulai dan selesai pengajuan!");
+  if (tglMulai > tglSelesai) return alert("Tanggal mulai tidak boleh lebih besar dari tanggal selesai!");
+  if (!alasan.trim()) return alert("Tuliskan alasan pengajuan secara jelas!");
+  if (!file) return alert("Wajib mengunggah berkas lampiran (foto/PDF)!");
+
+  showLoading('Membaca lampiran...');
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const payload = {
+      username: currentUser.username,
+      nama: currentUser.nama,
+      kategori: document.getElementById('cuti-kategori').value,
+      tglMulai: tglMulai,
+      tglSelesai: tglSelesai,
+      alasan: alasan,
+      fileBase64: e.target.result,
+      fileName: file.name
+    };
+
+    showLoading('Mengirim pengajuan izin/sakit...');
+    const res = await callAppsScript('submitCutiIzin', { payload });
+    hideLoading();
+
+    alert(res.message);
+    if (res.success) {
+      document.getElementById('form-cuti-izin').reset();
+      loadMyCutiIzinHistory();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadMyCutiIzinHistory() {
+  const tbody = document.getElementById('table-my-cuti-body');
+  tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Memuat riwayat...</td></tr>';
+
+  const res = await callAppsScript('getMyCutiIzin', { username: currentUser.username });
+  const rows = res.data || [];
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada pengajuan.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td><b>${r.id}</b></td>
+      <td><span class="badge bg-secondary">${r.kategori}</span></td>
+      <td><small>${formatIndonesianDate(r.tglMulai)} s/d ${formatIndonesianDate(r.tglSelesai)}</small></td>
+      <td>
+        <span class="badge ${r.status === 'APPROVED' ? 'bg-success' : r.status === 'REJECTED' ? 'bg-danger' : 'bg-warning text-dark'}">
+          ${r.status}
+        </span>
+      </td>
+    </tr>
+  `).join('');
 }
 
 async function loadMyAttendanceHistory() {
@@ -291,11 +396,11 @@ async function loadMyAttendanceHistory() {
   summary.textContent = `Total riwayat: ${rows.length} catatan`;
   tbody.innerHTML = rows.map(r => `
     <tr>
-      <td>${r.tanggal || '-'}</td>
+      <td><small class="fw-bold text-dark">${formatIndonesianDate(r.tanggal)}</small></td>
       <td>${r.jamMasuk || '-'}</td>
       <td>${r.jamPulang || '-'}</td>
       <td><span class="badge bg-secondary">${r.status || '-'}</span></td>
-      <td>${r.alasan !== '-' ? r.alasan : r.kegiatan || '-'}</td>
+      <td><small>${r.kegiatan !== '-' ? r.kegiatan : r.alasan || '-'}</small></td>
     </tr>
   `).join('');
 }
@@ -314,8 +419,8 @@ async function loadMySchedule() {
 
   tbody.innerHTML = schedules.map(s => `
     <tr>
-      <td>${s.tanggal}</td>
-      <td><span class="badge bg-primary">${s.shift}</span></td>
+      <td><b class="text-dark">${s.tanggalFormatted || formatIndonesianDate(s.tanggal)}</b></td>
+      <td><span class="badge ${s.shift === 'PAGI' ? 'bg-primary' : 'bg-success'}">${s.shift}</span></td>
       <td><small>${s.catatan || '-'}</small></td>
     </tr>
   `).join('');
@@ -324,6 +429,7 @@ async function loadMySchedule() {
 function showAdminView() {
   document.getElementById('view-admin').classList.remove('d-none');
   loadAdminDashboard();
+  loadPendingCutiIzin();
   loadPendingUsers();
   fetchLocationSettings();
 }
@@ -340,30 +446,75 @@ async function loadAdminDashboard() {
     return;
   }
 
-  tbody.innerHTML = activeUserList.map(u => `
-    <tr>
-      <td><b>${u.nama}</b><br><small class="text-muted">@${u.username} (${u.jenisPKL === '7_HARI' ? '7 Hari' : '5 Hari'})</small></td>
-      <td><small>${u.tglMulai} s/d ${u.tglSelesai}</small></td>
-      <td>
-        <span class="badge bg-success">M: ${u.summary.masuk}</span>
-        <span class="badge bg-warning text-dark">I: ${u.summary.izin}</span>
-        <span class="badge bg-danger">S: ${u.summary.sakit}</span>
-      </td>
-      <td><small>${u.summary.totalTelatMenit > 0 ? u.summary.totalTelatMenit + ' Mnt' : 'Tepat Waktu'}</small></td>
-      <td><small class="fw-bold">${u.persentase}%</small></td>
-      <td>
-        <button class="btn btn-sm btn-outline-primary" onclick="alert('Username: ${u.username}')">Detail</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = activeUserList.map(u => {
+    let badgeClass = "bg-success";
+    if (u.predikat === 'BURUK') badgeClass = "bg-danger";
+    else if (u.predikat === 'BAIK') badgeClass = "bg-info text-dark";
+
+    return `
+      <tr>
+        <td><b>${u.nama}</b><br><small class="text-muted">@${u.username}</small></td>
+        <td><small>${u.asalSekolah || '-'}</small></td>
+        <td><small>${formatIndonesianDate(u.tglMulai)} s/d ${formatIndonesianDate(u.tglSelesai)}</small></td>
+        <td>
+          <span class="badge bg-success">M: ${u.summary.masuk}</span>
+          <span class="badge bg-warning text-dark">I: ${u.summary.izin}</span>
+          <span class="badge bg-danger">S: ${u.summary.sakit}</span>
+        </td>
+        <td>
+          <div class="fw-bold fs-6">${u.persentase}%</div>
+          <span class="badge ${badgeClass}">${u.predikat}</span>
+          <div class="text-muted" style="font-size:0.65rem;">${u.periodeBerakhir ? 'Periode Habis' : 'Periode Aktif'}</div>
+        </td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-primary" onclick="openModalEditUser('${u.username}', '${u.nama}', '${u.asalSekolah}', '${u.tglMulai}', '${u.tglSelesai}')">
+            <i class="fa-solid fa-edit"></i> Edit
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openModalEditUser(username, nama, asalSekolah, tglMulai, tglSelesai) {
+  document.getElementById('edit-user-username').value = username;
+  document.getElementById('edit-user-nama').value = nama;
+  document.getElementById('edit-user-sekolah').value = asalSekolah !== 'null' ? asalSekolah : '';
+  document.getElementById('edit-user-mulai').value = tglMulai;
+  document.getElementById('edit-user-selesai').value = tglSelesai;
+
+  const modal = new bootstrap.Modal(document.getElementById('modalEditUser'));
+  modal.show();
+}
+
+async function saveEditUser() {
+  const payload = {
+    username: document.getElementById('edit-user-username').value,
+    nama: document.getElementById('edit-user-nama').value,
+    asalSekolah: document.getElementById('edit-user-sekolah').value,
+    tglMulai: document.getElementById('edit-user-mulai').value,
+    tglSelesai: document.getElementById('edit-user-selesai').value
+  };
+
+  showLoading('Menyimpan perubahan user...');
+  const res = await callAppsScript('updateUser', { payload });
+  hideLoading();
+
+  alert(res.message);
+  if (res.success) {
+    bootstrap.Modal.getInstance(document.getElementById('modalEditUser')).hide();
+    loadAdminDashboard();
+  }
 }
 
 function loadJadwalSection() {
   const select = document.getElementById('schedule-user');
+  const delSelect = document.getElementById('del-user-select');
   const container = document.getElementById('gen-user-checkboxes');
   if (!select || !container) return;
 
   select.innerHTML = '';
+  if (delSelect) delSelect.innerHTML = '<option value="">-- Semua User / Siswa PKL --</option>';
   container.innerHTML = '';
 
   if (!activeUserList || activeUserList.length === 0) {
@@ -374,10 +525,11 @@ function loadJadwalSection() {
 
   activeUserList.forEach(u => {
     select.innerHTML += `<option value="${u.username}">${u.nama} (@${u.username})</option>`;
+    if (delSelect) delSelect.innerHTML += `<option value="${u.username}">${u.nama} (@${u.username})</option>`;
     container.innerHTML += `
       <div class="form-check form-check-sm mb-1">
-        <input class="form-check-input gen-user-checkbox" type="checkbox" value="${u.username}" data-nama="${u.nama}" data-jenis="${u.jenisPKL}" id="chk-${u.username}" checked>
-        <label class="form-check-label small" for="chk-${u.username}">${u.nama} <span class="badge bg-secondary" style="font-size:0.65rem">${u.jenisPKL === '7_HARI' ? '7H' : '5H'}</span></label>
+        <input class="form-check-input gen-user-checkbox" type="checkbox" value="${u.username}" data-nama="${u.nama}" id="chk-${u.username}" checked>
+        <label class="form-check-label small" for="chk-${u.username}">${u.nama}</label>
       </div>
     `;
   });
@@ -413,15 +565,14 @@ async function handleGenerateRandomSchedule() {
   const endDate = document.getElementById('gen-end-date').value;
   const quotaPagi = document.getElementById('gen-quota-pagi').value;
   const quotaSiang = document.getElementById('gen-quota-siang').value;
-  const filterJenisPKL = document.getElementById('gen-filter-jenis-pkl').value;
+  const jenisPKL = document.getElementById('gen-jenis-pkl').value;
   
   const checkboxes = document.querySelectorAll('.gen-user-checkbox:checked');
   let users = [];
   checkboxes.forEach(chk => {
     users.push({ 
       username: chk.value, 
-      nama: chk.getAttribute('data-nama'),
-      jenisPKL: chk.getAttribute('data-jenis')
+      nama: chk.getAttribute('data-nama')
     });
   });
 
@@ -429,7 +580,7 @@ async function handleGenerateRandomSchedule() {
   if (startDate > endDate) return alert("Tanggal mulai tidak boleh melebihi tanggal selesai!");
   if (!users.length) return alert("Pilih minimal satu user!");
 
-  showLoading('Mengacak dan membagi jadwal shift secara adil...');
+  showLoading('Mengacak dan membagi jadwal shift...');
   const res = await callAppsScript('generateRandomSchedule', { 
     payload: { 
       startDate, 
@@ -437,7 +588,7 @@ async function handleGenerateRandomSchedule() {
       users,
       quotaPagi,
       quotaSiang,
-      filterJenisPKL
+      jenisPKL
     } 
   });
   hideLoading();
@@ -460,7 +611,7 @@ async function loadAllSchedules() {
 
   tbody.innerHTML = allSchedulesList.map(s => `
     <tr>
-      <td>${s.tanggal}</td>
+      <td><b>${s.tanggalFormatted || formatIndonesianDate(s.tanggal)}</b></td>
       <td><b>${s.nama}</b></td>
       <td><span class="badge ${s.shift === 'PAGI' ? 'bg-primary' : 'bg-success'}">${s.shift}</span></td>
       <td><small>${s.catatan}</small></td>
@@ -480,9 +631,44 @@ async function handleDeleteSchedule(rowIndex) {
   if (res.success) loadAllSchedules();
 }
 
+async function handleDeleteSchedulesByRange() {
+  const startDate = document.getElementById('del-start-date').value;
+  const endDate = document.getElementById('del-end-date').value;
+  const username = document.getElementById('del-user-select').value;
+
+  if (!startDate || !endDate) {
+    return alert("Harap pilih tanggal mulai dan tanggal selesai!");
+  }
+  if (startDate > endDate) {
+    return alert("Tanggal mulai tidak boleh lebih besar dari tanggal selesai!");
+  }
+
+  const userText = username ? `user @${username}` : "SEMUA USER";
+  if (!confirm(`Apakah Anda yakin ingin menghapus jadwal untuk ${userText} dari tanggal ${formatIndonesianDate(startDate)} s/d ${formatIndonesianDate(endDate)}?`)) {
+    return;
+  }
+
+  showLoading('Menghapus jadwal berdasarkan rentang tanggal...');
+  const res = await callAppsScript('deleteSchedulesByRange', {
+    payload: {
+      startDate,
+      endDate,
+      username
+    }
+  });
+  hideLoading();
+
+  alert(res.message);
+  if (res.success) {
+    document.getElementById('del-start-date').value = '';
+    document.getElementById('del-end-date').value = '';
+    loadAllSchedules();
+  }
+}
+
 async function loadAllAttendanceDetails() {
   const tbody = document.getElementById('table-detail-all-body');
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Memuat riwayat...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Memuat riwayat...</td></tr>';
 
   const res = await callAppsScript('getAllAttendanceDetails');
   rawAllDetails = res.data || [];
@@ -501,54 +687,190 @@ function applyAttendanceFilters() {
 
   const tbody = document.getElementById('table-detail-all-body');
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tidak ditemukan data.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Tidak ditemukan data.</td></tr>';
     return;
   }
 
   tbody.innerHTML = filtered.map(r => `
     <tr>
-      <td>${r.tanggal}</td>
+      <td><small class="fw-bold text-dark">${formatIndonesianDate(r.tanggal)}</small></td>
       <td><b>${r.nama}</b></td>
       <td>${r.jamMasuk}</td>
       <td>${r.jamPulang}</td>
       <td><span class="badge bg-success">${r.status}</span></td>
-      <td><small>${r.alasan}</small></td>
       <td><small>${r.keterlambatan}</small></td>
+      <td><small>${r.kegiatan || '-'}</small></td>
+      <td><small>${r.alasan || '-'}</small></td>
+      <td class="no-print text-center">
+        <button class="btn btn-xs btn-outline-primary" onclick="openModalEditAttendance(${r.rowIndex}, '${r.jamMasuk}', '${r.jamPulang}', '${r.status}', \`${r.kegiatan || ''}\`, \`${r.alasan || ''}\`)">
+          <i class="fa-solid fa-edit"></i> Edit
+        </button>
+      </td>
     </tr>
   `).join('');
 }
 
-async function loadPendingUsers() {
-  const tbody = document.getElementById('table-approve-body');
-  tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Memuat antrean...</td></tr>';
+function openModalEditAttendance(rowIndex, masuk, pulang, status, kegiatan, alasan) {
+  document.getElementById('edit-att-rowIndex').value = rowIndex;
+  document.getElementById('edit-att-masuk').value = masuk;
+  document.getElementById('edit-att-pulang').value = pulang;
+  document.getElementById('edit-att-status').value = status;
+  document.getElementById('edit-att-kegiatan').value = kegiatan;
+  document.getElementById('edit-att-alasan').value = alasan;
 
-  const res = await callAppsScript('getPendingUsers');
+  const modal = new bootstrap.Modal(document.getElementById('modalEditAttendance'));
+  modal.show();
+}
+
+async function saveEditAttendance() {
+  const payload = {
+    rowIndex: document.getElementById('edit-att-rowIndex').value,
+    jamMasuk: document.getElementById('edit-att-masuk').value,
+    jamPulang: document.getElementById('edit-att-pulang').value,
+    status: document.getElementById('edit-att-status').value,
+    kegiatan: document.getElementById('edit-att-kegiatan').value,
+    alasan: document.getElementById('edit-att-alasan').value
+  };
+
+  showLoading('Menyimpan perubahan riwayat...');
+  const res = await callAppsScript('updateAttendanceRecord', { payload });
+  hideLoading();
+
+  alert(res.message);
+  if (res.success) {
+    bootstrap.Modal.getInstance(document.getElementById('modalEditAttendance')).hide();
+    loadAllAttendanceDetails();
+  }
+}
+
+function exportToExcel() {
+  if (!rawAllDetails || !rawAllDetails.length) return alert("Tidak ada data untuk diexport!");
+
+  const dataToExport = rawAllDetails.map(r => ({
+    "Tanggal": formatIndonesianDate(r.tanggal),
+    "Username": r.username,
+    "Nama Lengkap": r.nama,
+    "Jam Masuk": r.jamMasuk,
+    "Jam Pulang": r.jamPulang,
+    "Status": r.status,
+    "Keterlambatan": r.keterlambatan,
+    "Laporan Kegiatan": r.kegiatan || "-",
+    "Alasan / Keterangan": r.alasan || "-"
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Absensi PKL");
+  XLSX.writeFile(workbook, "Riwayat_Absensi_PKL.xlsx");
+}
+
+async function loadPendingCutiIzin() {
+  const tbody = document.getElementById('table-approve-cuti-body');
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Memuat data pengajuan...</td></tr>';
+
+  const res = await callAppsScript('getPendingCutiIzin');
   const data = res.data || [];
 
-  const badge = document.getElementById('badge-pending-count');
-  if (data.length > 0) {
-    badge.innerText = data.length;
+  const pendingCount = data.filter(r => r.status === 'PENDING').length;
+  const badge = document.getElementById('badge-pending-cuti');
+  if (pendingCount > 0) {
+    badge.innerText = pendingCount;
     badge.classList.remove('d-none');
   } else {
     badge.classList.add('d-none');
   }
 
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Tidak ada pendaftaran pending.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Belum ada data pengajuan izin/sakit.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = data.map(u => `
-    <tr>
-      <td><b>${u.nama}</b><br><small class="text-muted">@${u.username}</small></td>
-      <td><small>${u.tglMulai} s/d ${u.tglSelesai}</small></td>
-      <td>${u.totalHari} Hari</td>
-      <td>
+  tbody.innerHTML = data.map(r => {
+    let statusBadge = `<span class="badge bg-warning text-dark">${r.status}</span>`;
+    if (r.status === 'APPROVED') statusBadge = `<span class="badge bg-success">APPROVED</span>`;
+    if (r.status === 'REJECTED') statusBadge = `<span class="badge bg-danger">REJECTED</span>`;
+
+    let actionButtons = '-';
+    if (r.status === 'PENDING') {
+      actionButtons = `
+        <button class="btn btn-sm btn-success fw-bold me-1" onclick="handleApproveCutiIzin('${r.id}', 'APPROVED')">Approve</button>
+        <button class="btn btn-sm btn-danger fw-bold" onclick="handleApproveCutiIzin('${r.id}', 'REJECTED')">Tolak</button>
+      `;
+    } else {
+      actionButtons = `<small class="text-muted">Selesai (${r.status})</small>`;
+    }
+
+    return `
+      <tr>
+        <td><b>${r.id}</b></td>
+        <td><b>${r.nama}</b><br><small class="text-muted">@${r.username}</small></td>
+        <td><span class="badge bg-secondary">${r.kategori}</span></td>
+        <td><small>${formatIndonesianDate(r.tglMulai)} s/d ${formatIndonesianDate(r.tglSelesai)}</small></td>
+        <td><small>${r.alasan}</small></td>
+        <td>${r.fileUrl && r.fileUrl !== '-' ? `<a href="${r.fileUrl}" target="_blank" class="btn btn-xs btn-outline-info">View File</a>` : '-'}</td>
+        <td>${statusBadge}</td>
+        <td>${actionButtons}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function handleApproveCutiIzin(id, targetStatus) {
+  showLoading('Memproses approval pengajuan...');
+  const res = await callAppsScript('processCutiIzinApproval', { id, status: targetStatus });
+  hideLoading();
+  alert(res.message);
+  loadPendingCutiIzin();
+  loadAdminDashboard();
+}
+
+async function loadPendingUsers() {
+  const tbody = document.getElementById('table-approve-body');
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Memuat daftar user...</td></tr>';
+
+  const res = await callAppsScript('getPendingUsers');
+  const data = res.data || [];
+
+  const pendingCount = data.filter(u => u.status === 'PENDING').length;
+  const badge = document.getElementById('badge-pending-count');
+  if (pendingCount > 0) {
+    badge.innerText = pendingCount;
+    badge.classList.remove('d-none');
+  } else {
+    badge.classList.add('d-none');
+  }
+
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada data pendaftaran user.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(u => {
+    let statusBadge = `<span class="badge bg-warning text-dark">${u.status}</span>`;
+    if (u.status === 'ACTIVE') statusBadge = `<span class="badge bg-success">ACTIVE</span>`;
+    if (u.status === 'REJECTED') statusBadge = `<span class="badge bg-danger">REJECTED</span>`;
+
+    let actionButtons = '-';
+    if (u.status === 'PENDING') {
+      actionButtons = `
         <button class="btn btn-sm btn-success fw-bold me-1" onclick="handleApproveUser('${u.username}', 'active')">Approve</button>
         <button class="btn btn-sm btn-danger fw-bold" onclick="handleApproveUser('${u.username}', 'rejected')">Tolak</button>
-      </td>
-    </tr>
-  `).join('');
+      `;
+    } else {
+      actionButtons = `<small class="text-muted">Telah Diprosess</small>`;
+    }
+
+    return `
+      <tr>
+        <td><b>${u.nama}</b><br><small class="text-muted">@${u.username}</small></td>
+        <td><small>${u.asalSekolah || '-'}</small></td>
+        <td><small>${formatIndonesianDate(u.tglMulai)} s/d ${formatIndonesianDate(u.tglSelesai)}</small></td>
+        <td>${u.totalHari} Hari</td>
+        <td>${statusBadge}</td>
+        <td>${actionButtons}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 async function handleApproveUser(username, targetStatus) {
@@ -557,27 +879,6 @@ async function handleApproveUser(username, targetStatus) {
   hideLoading();
   alert(res.message);
   loadPendingUsers();
-  loadAdminDashboard();
-}
-
-async function handleAddUser() {
-  const userData = {
-    username: document.getElementById('add-username').value,
-    password: document.getElementById('add-password').value,
-    nama: document.getElementById('add-nama').value,
-    role: document.getElementById('add-role').value,
-    jenisPKL: document.getElementById('add-jenis-pkl').value,
-    tglMulai: document.getElementById('add-mulai').value,
-    tglSelesai: document.getElementById('add-selesai').value
-  };
-
-  if (!userData.username || !userData.password) return alert("Username dan Password wajib diisi!");
-
-  showLoading('Menambahkan user...');
-  const res = await callAppsScript('addUser', { userData });
-  hideLoading();
-
-  alert(res.message);
   loadAdminDashboard();
 }
 
@@ -640,6 +941,7 @@ async function fetchLocationSettings() {
 function logout() {
   currentUser = null;
   capturedBase64 = "";
+  localStorage.removeItem('pkl_current_user');
   document.getElementById('view-user').classList.add('d-none');
   document.getElementById('view-admin').classList.add('d-none');
   document.getElementById('view-auth').classList.remove('d-none');
