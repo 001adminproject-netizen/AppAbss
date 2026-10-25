@@ -155,9 +155,27 @@ function showUserView() {
   document.getElementById('view-user').classList.remove('d-none');
   document.getElementById('user-welcome').innerText = currentUser.nama;
   document.getElementById('user-school').innerText = currentUser.asalSekolah || "Siswa / Mahasiswa";
+  renderUserProfile();
   loadTodayAttendance();
   fetchLocationSettings();
   handleAbsenTypeChange();
+}
+
+
+function renderUserProfile() {
+  if (!currentUser) return;
+  const values = {
+    'profile-nama': currentUser.nama || '-',
+    'profile-username': currentUser.username ? '@' + currentUser.username : '-',
+    'profile-sekolah': currentUser.asalSekolah || '-',
+    'profile-mulai': currentUser.tglMulai || '-',
+    'profile-selesai': currentUser.tglSelesai || '-',
+    'profile-jenis': currentUser.jenisPKL === '7_HARI' ? '7 hari' : (currentUser.jenisPKL === '5_HARI' ? '5 hari kerja' : (currentUser.jenisPKL || '-'))
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  });
 }
 
 function handleShiftChange() {
