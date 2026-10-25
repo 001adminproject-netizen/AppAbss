@@ -1,4 +1,29 @@
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwW2pgJanQe6oeit6-DrbtkZdtAyjLbGhH76Pc529_JL1-Zttj0aPvE742PmDwHc7AMLw/exec";
+
+function showToast(message, type = 'info', duration = 4200) {
+  const host = document.getElementById('app-notifications');
+  if (!host) { window.alert(String(message)); return; }
+  const toast = document.createElement('div');
+  if (type === 'info' && /gagal|ditolak|tidak valid|belum|harus|error|terlalu jauh/i.test(String(message))) type = 'error';
+  else if (type === 'info' && /berhasil|sukses|terkirim/i.test(String(message))) type = 'success';
+  toast.className = `app-toast ${['success','error','info'].includes(type) ? type : 'info'}`;
+  const icon = type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-bell';
+  const msg = document.createElement('div');
+  msg.className = 'toast-message';
+  msg.textContent = String(message || 'Proses selesai.');
+  const ico = document.createElement('i');
+  ico.className = `fa-solid ${icon} mt-1`;
+  const close = document.createElement('button');
+  close.className = 'toast-close';
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Tutup notifikasi');
+  close.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  close.addEventListener('click', () => toast.remove());
+  toast.append(ico, msg, close);
+  host.appendChild(toast);
+  window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, duration);
+}
+
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxANnx_VfPzPdtTeaf-G943Yw_SMHigRfYfx5pXz_emj23Mht0IJlDNPwqdbfl0VDYG/exec";
 
 let currentUser = null;
 let targetLocation = null;
@@ -9,7 +34,6 @@ let allSchedulesList = [];
 
 let adminMap = null;
 let adminMarker = null;
-let adminCircle = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   const savedUser = localStorage.getItem('pkl_current_user');
@@ -23,19 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
         showUserView();
       }
     } catch (e) {
-      console.error("Gagal memuat sesi user:", e);
       localStorage.removeItem('pkl_current_user');
     }
   }
 });
-
-setInterval(() => {
-  const now = new Date();
-  const timeElem = document.getElementById('current-time');
-  const dateElem = document.getElementById('current-date');
-  if (timeElem) timeElem.innerText = now.toLocaleTimeString('id-ID');
-  if (dateElem) dateElem.innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-}, 1000);
 
 function formatIndonesianDate(dateStr) {
   if (!dateStr || dateStr === '-') return '-';
@@ -54,9 +69,7 @@ function formatIndonesianDate(dateStr) {
 
       return `${days[d.getDay()]}, ${String(day).padStart(2, '0')} ${months[month]} ${year}`;
     }
-  } catch (e) {
-    console.error("Gagal format tanggal:", e);
-  }
+  } catch (e) {}
   return dateStr;
 }
 
@@ -69,12 +82,56 @@ function hideLoading() {
   document.getElementById('loading-overlay').classList.add('d-none');
 }
 
-function switchUserTab(tabName, btnElem) {
-  document.querySelectorAll('.mobile-nav-tabs .nav-btn').forEach(b => b.classList.remove('active'));
-  btnElem.classList.add('active');
+function openAbsenModal(type) {
+  const absenTipe = document.getElementById('absen-tipe');
+  if (absenTipe) {
+    absenTipe.value = type;
+    handleAbsenTypeChange();
+  }
+  switchUserTab('absen');
+}
 
-  document.querySelectorAll('.user-tab-pane').forEach(pane => pane.classList.add('d-none'));
-  document.getElementById(`user-tab-${tabName}`).classList.remove('d-none');
+function switchUserTab(targetPage) {
+  const activeBtn = document.getElementById(`btn-nav-${targetPage === 'cuti-izin' ? 'izin' : targetPage}`);
+
+  document.querySelectorAll('.mobile-nav-tabs .nav-btn').forEach(b => b.classList.remove('active'));
+  if (activeBtn) activeBtn.classList.add('active');
+
+  document.querySelectorAll('.user-page-section').forEach(sec => sec.classList.add('d-none'));
+
+  const targetSec = document.getElementById(`page-user-${targetPage}`);
+  if (targetSec) {
+    targetSec.classList.remove('d-none');
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  refreshCurrentPageData(targetPage);
+}
+
+function refreshCurrentPageData(page) {
+  if (!currentUser) return;
+
+  switch (page) {
+    case 'home':
+      loadTodayAttendance();
+      loadUserDashboardSummary();
+      break;
+    case 'absen':
+      loadTodayAttendance();
+      break;
+    case 'cuti-izin':
+      loadMyCutiIzinHistory();
+      break;
+    case 'riwayat':
+      loadMyAttendanceHistory();
+      break;
+    case 'jadwal':
+      loadMySchedule();
+      break;
+    case 'profil':
+      renderUserProfile();
+      break;
+  }
 }
 
 async function callAppsScript(action, payload = {}) {
@@ -87,7 +144,6 @@ async function callAppsScript(action, payload = {}) {
     });
     return await response.json();
   } catch (error) {
-    console.error('API Error:', error);
     return { success: false, message: 'Gagal terhubung ke server backend.' };
   }
 }
@@ -152,15 +208,42 @@ async function handleRegister() {
 }
 
 function showUserView() {
+  document.body.classList.remove('admin-mode');
   document.getElementById('view-user').classList.remove('d-none');
   document.getElementById('user-welcome').innerText = currentUser.nama;
   document.getElementById('user-school').innerText = currentUser.asalSekolah || "Siswa / Mahasiswa";
+  
+  const instansiCard = document.getElementById('user-instansi-card');
+  if (instansiCard) instansiCard.innerText = currentUser.asalSekolah || "Sistem Absensi PKL";
+
+  switchUserTab('home');
   renderUserProfile();
-  loadTodayAttendance();
   fetchLocationSettings();
   handleAbsenTypeChange();
 }
 
+async function loadUserDashboardSummary() {
+  const res = await callAppsScript('getMyAttendanceHistory', { username: currentUser.username });
+  if (res && res.success) {
+    const list = res.data || [];
+    let masukCount = 0;
+    let izinCount = 0;
+
+    list.forEach(item => {
+      let st = (item.status || '').toUpperCase();
+      if (st === 'HADIR' || st === 'MASUK') {
+        masukCount++;
+      } else if (st === 'IZIN' || st === 'SAKIT' || st === 'CUTI') {
+        izinCount++;
+      }
+    });
+
+    const statKehadiran = document.getElementById('stat-kehadiran');
+    const statIzin = document.getElementById('stat-izin');
+    if (statKehadiran) statKehadiran.innerText = masukCount;
+    if (statIzin) statIzin.innerText = izinCount;
+  }
+}
 
 function renderUserProfile() {
   if (!currentUser) return;
@@ -169,8 +252,7 @@ function renderUserProfile() {
     'profile-username': currentUser.username ? '@' + currentUser.username : '-',
     'profile-sekolah': currentUser.asalSekolah || '-',
     'profile-mulai': currentUser.tglMulai || '-',
-    'profile-selesai': currentUser.tglSelesai || '-',
-    'profile-jenis': currentUser.jenisPKL === '7_HARI' ? '7 hari' : (currentUser.jenisPKL === '5_HARI' ? '5 hari kerja' : (currentUser.jenisPKL || '-'))
+    'profile-selesai': currentUser.tglSelesai || '-'
   };
   Object.entries(values).forEach(([id, value]) => {
     const el = document.getElementById(id);
@@ -184,11 +266,11 @@ function handleShiftChange() {
   const isWeekend = (day === 0 || day === 6);
 
   if (isWeekend) {
-    alert("Absensi Akhir Pekan (Sabtu/Minggu): Bebas radius lokasi.");
+    showToast("Info jadwal: akhir pekan tetap mengikuti jadwal yang ditetapkan admin.", "info");
   } else if (shift === 'SIANG') {
-    alert("Shift Siang (12:15): Bebas radius GPS.");
+    showToast("Shift Siang dipilih. Pastikan shift ini sesuai jadwal admin.", "info");
   } else {
-    alert("Shift Pagi (08:15): Wajib radius 100m kantor.");
+    showToast("Shift Pagi dipilih. Pastikan shift ini sesuai jadwal admin.", "info");
   }
 }
 
@@ -251,7 +333,7 @@ function processAbsen() {
   if (wajibRadius && (tipe === 'MASUK' || tipe === 'PULANG')) {
     if (!navigator.geolocation) {
       hideLoading();
-      return alert("Browser tidak mendukung GPS.");
+      return showToast("Browser tidak mendukung GPS.");
     }
     navigator.geolocation.getCurrentPosition(
       pos => {
@@ -262,14 +344,14 @@ function processAbsen() {
         const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, targetLocation.lat, targetLocation.lng);
         if (dist > 100) {
           hideLoading();
-          alert(`Posisi Anda terlalu jauh (${Math.round(dist)}m dari kantor). Radius maksimal 100m.`);
+          showToast(`Posisi Anda terlalu jauh (${Math.round(dist)}m dari kantor). Radius maksimal 100m.`);
         } else {
           executeSubmitAbsen(tipe, shift, detailText);
         }
       },
       err => {
         hideLoading();
-        alert("Gagal membaca GPS. Pastikan Izin Lokasi aktif!");
+        showToast("Gagal membaca GPS. Pastikan Izin Lokasi aktif!");
       }
     );
   } else {
@@ -280,7 +362,7 @@ function processAbsen() {
 async function executeSubmitAbsen(tipe, shift, textDetail) {
   if ((tipe === 'MASUK' || tipe === 'PULANG') && !capturedBase64) {
     hideLoading();
-    return alert("Harap ambil foto selfie terlebih dahulu!");
+    return showToast("Harap ambil foto selfie terlebih dahulu!");
   }
 
   showLoading('Mengirim data absensi...');
@@ -298,7 +380,7 @@ async function executeSubmitAbsen(tipe, shift, textDetail) {
   const res = await callAppsScript('submitAttendance', { payload });
   hideLoading();
   
-  alert(res.message);
+  showToast(res.message);
   
   if (res.success) {
     document.getElementById('absen-kegiatan').value = '';
@@ -306,7 +388,7 @@ async function executeSubmitAbsen(tipe, shift, textDetail) {
     capturedBase64 = "";
     document.getElementById('preview-img').classList.add('d-none');
     document.getElementById('placeholder-box').classList.remove('d-none');
-    loadTodayAttendance();
+    switchUserTab('home');
   }
 }
 
@@ -316,20 +398,43 @@ async function loadTodayAttendance() {
   const records = res.records;
 
   if (!records) {
-    container.innerHTML = `<p class="text-muted small text-center my-2">Belum ada catatan absen hari ini.</p>`;
+    if (container) container.innerHTML = `<p class="text-muted small text-center my-2">Belum ada catatan absen hari ini.</p>`;
+    const checkinElem = document.getElementById('card-checkin-time');
+    const checkoutElem = document.getElementById('card-checkout-time');
+    if (checkinElem) checkinElem.innerText = '--:-- WIB';
+    if (checkoutElem) checkoutElem.innerText = '--:-- WIB';
+    const syncElem = document.getElementById('sync-time-text');
+    if (syncElem) syncElem.innerText = 'Belum Absen';
     return;
   }
 
-  container.innerHTML = `
-    <div class="p-2 bg-light rounded-3 border">
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="badge bg-primary">${records.status}: ${records.jamMasuk}</span>
-        <small class="fw-bold text-secondary">${records.keterlambatan}</small>
+  if (records.jamMasuk && records.jamMasuk !== '-') {
+    const checkinElem = document.getElementById('card-checkin-time');
+    if (checkinElem) checkinElem.innerText = records.jamMasuk + ' WIB';
+  }
+
+  if (records.jamPulang && records.jamPulang !== '-') {
+    const checkoutElem = document.getElementById('card-checkout-time');
+    if (checkoutElem) checkoutElem.innerText = records.jamPulang + ' WIB';
+  }
+
+  const syncElem = document.getElementById('sync-time-text');
+  if (syncElem && records.status) {
+    syncElem.innerText = `${records.status} (${records.jamMasuk || '-'})`;
+  }
+
+  if (container) {
+    container.innerHTML = `
+      <div class="p-2 bg-light rounded-3 border">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="badge bg-primary">${records.status}: ${records.jamMasuk}</span>
+          <small class="fw-bold text-secondary">${records.keterlambatan}</small>
+        </div>
+        ${records.jamPulang && records.jamPulang !== '-' ? `<div class="mt-1"><span class="badge bg-dark">PULANG: ${records.jamPulang}</span></div>` : ''}
+        <div class="small text-muted mt-1"><b>Laporan/Ket:</b> ${records.kegiatan || records.alasan || '-'}</div>
       </div>
-      ${records.jamPulang && records.jamPulang !== '-' ? `<div class="mt-1"><span class="badge bg-dark">PULANG: ${records.jamPulang}</span></div>` : ''}
-      <div class="small text-muted mt-1"><b>Ket/Laporan:</b> ${records.kegiatan || records.alasan || '-'}</div>
-    </div>
-  `;
+    `;
+  }
 }
 
 async function handleSubmitCutiIzin() {
@@ -339,10 +444,10 @@ async function handleSubmitCutiIzin() {
   const fileInput = document.getElementById('cuti-file');
   const file = fileInput.files[0];
 
-  if (!tglMulai || !tglSelesai) return alert("Pilih tanggal mulai dan selesai pengajuan!");
-  if (tglMulai > tglSelesai) return alert("Tanggal mulai tidak boleh lebih besar dari tanggal selesai!");
-  if (!alasan.trim()) return alert("Tuliskan alasan pengajuan secara jelas!");
-  if (!file) return alert("Wajib mengunggah berkas lampiran (foto/PDF)!");
+  if (!tglMulai || !tglSelesai) return showToast("Pilih tanggal mulai dan selesai pengajuan!");
+  if (tglMulai > tglSelesai) return showToast("Tanggal mulai tidak boleh lebih besar dari tanggal selesai!");
+  if (!alasan.trim()) return showToast("Tuliskan alasan pengajuan secara jelas!");
+  if (!file) return showToast("Wajib mengunggah berkas lampiran!");
 
   showLoading('Membaca lampiran...');
   const reader = new FileReader();
@@ -362,7 +467,7 @@ async function handleSubmitCutiIzin() {
     const res = await callAppsScript('submitCutiIzin', { payload });
     hideLoading();
 
-    alert(res.message);
+    showToast(res.message);
     if (res.success) {
       document.getElementById('form-cuti-izin').reset();
       loadMyCutiIzinHistory();
@@ -373,6 +478,7 @@ async function handleSubmitCutiIzin() {
 
 async function loadMyCutiIzinHistory() {
   const tbody = document.getElementById('table-my-cuti-body');
+  if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Memuat riwayat...</td></tr>';
 
   const res = await callAppsScript('getMyCutiIzin', { username: currentUser.username });
@@ -400,6 +506,7 @@ async function loadMyCutiIzinHistory() {
 async function loadMyAttendanceHistory() {
   const tbody = document.getElementById('table-my-attendance-body');
   const summary = document.getElementById('my-attendance-summary');
+  if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="5" class="text-center">Memuat riwayat...</td></tr>';
 
   const res = await callAppsScript('getMyAttendanceHistory', { username: currentUser.username });
@@ -407,11 +514,11 @@ async function loadMyAttendanceHistory() {
 
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada riwayat absensi.</td></tr>';
-    summary.textContent = '';
+    if (summary) summary.textContent = '';
     return;
   }
 
-  summary.textContent = `Total riwayat: ${rows.length} catatan`;
+  if (summary) summary.textContent = `Total riwayat: ${rows.length} catatan`;
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td><small class="fw-bold text-dark">${formatIndonesianDate(r.tanggal)}</small></td>
@@ -425,6 +532,7 @@ async function loadMyAttendanceHistory() {
 
 async function loadMySchedule() {
   const tbody = document.getElementById('table-my-schedule-body');
+  if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Memuat...</td></tr>';
 
   const res = await callAppsScript('getUserSchedule', { username: currentUser.username });
@@ -445,6 +553,7 @@ async function loadMySchedule() {
 }
 
 function showAdminView() {
+  document.body.classList.add('admin-mode');
   document.getElementById('view-admin').classList.remove('d-none');
   loadAdminDashboard();
   loadPendingCutiIzin();
@@ -454,44 +563,49 @@ function showAdminView() {
 
 async function loadAdminDashboard() {
   const tbody = document.getElementById('table-rekap-body');
-  tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Memuat rekapitulasi user active...</td></tr>';
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Memuat rekapitulasi...</td></tr>';
 
   const res = await callAppsScript('getAdminDashboard');
+  if (!res || !res.success) {
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">${(res && res.message) || 'Gagal memuat data. Silakan perbarui kembali.'}</td></tr>`;
+    return;
+  }
   activeUserList = res.data || [];
+  const totalMasuk = activeUserList.reduce((sum, u) => sum + Number((u.summary || {}).masuk || 0), 0);
+  const totalIzin = activeUserList.reduce((sum, u) => sum + Number((u.summary || {}).izin || 0) + Number((u.summary || {}).sakit || 0), 0);
+  const statUsers = document.getElementById('admin-stat-users');
+  const statMasuk = document.getElementById('admin-stat-masuk');
+  const statIzin = document.getElementById('admin-stat-izin');
+  if (statUsers) statUsers.textContent = activeUserList.length;
+  if (statMasuk) statMasuk.textContent = totalMasuk;
+  if (statIzin) statIzin.textContent = totalIzin;
+  const updated = document.getElementById('admin-last-updated');
+  if (updated) updated.textContent = 'Diperbarui ' + new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
 
   if (!activeUserList.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Belum ada user/siswa PKL aktif.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = activeUserList.map(u => {
-    let badgeClass = "bg-success";
-    if (u.predikat === 'BURUK') badgeClass = "bg-danger";
-    else if (u.predikat === 'BAIK') badgeClass = "bg-info text-dark";
-
-    return `
-      <tr>
-        <td><b>${u.nama}</b><br><small class="text-muted">@${u.username}</small></td>
-        <td><small>${u.asalSekolah || '-'}</small></td>
-        <td><small>${formatIndonesianDate(u.tglMulai)} s/d ${formatIndonesianDate(u.tglSelesai)}</small></td>
-        <td>
-          <span class="badge bg-success">M: ${u.summary.masuk}</span>
-          <span class="badge bg-warning text-dark">I: ${u.summary.izin}</span>
-          <span class="badge bg-danger">S: ${u.summary.sakit}</span>
-        </td>
-        <td>
-          <div class="fw-bold fs-6">${u.persentase}%</div>
-          <span class="badge ${badgeClass}">${u.predikat}</span>
-          <div class="text-muted" style="font-size:0.65rem;">${u.periodeBerakhir ? 'Periode Habis' : 'Periode Aktif'}</div>
-        </td>
-        <td class="text-center">
-          <button class="btn btn-sm btn-outline-primary" onclick="openModalEditUser('${u.username}', '${u.nama}', '${u.asalSekolah}', '${u.tglMulai}', '${u.tglSelesai}')">
-            <i class="fa-solid fa-edit"></i> Edit
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join('');
+  tbody.innerHTML = activeUserList.map(u => `
+    <tr>
+      <td><b>${u.nama}</b><br><small class="text-muted">@${u.username}</small></td>
+      <td><small>${u.asalSekolah || '-'}</small></td>
+      <td><small>${formatIndonesianDate(u.tglMulai)} s/d ${formatIndonesianDate(u.tglSelesai)}</small></td>
+      <td>
+        <span class="badge bg-success">M: ${u.summary.masuk}</span>
+        <span class="badge bg-warning text-dark">I: ${u.summary.izin}</span>
+        <span class="badge bg-danger">S: ${u.summary.sakit}</span>
+      </td>
+      <td><span class="badge bg-success">AKTIF</span></td>
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-primary" onclick="openModalEditUser('${u.username}', '${u.nama}', '${u.asalSekolah}', '${u.tglMulai}', '${u.tglSelesai}')">
+          <i class="fa-solid fa-edit"></i> Edit
+        </button>
+      </td>
+    </tr>
+  `).join('');
 }
 
 function openModalEditUser(username, nama, asalSekolah, tglMulai, tglSelesai) {
@@ -518,7 +632,7 @@ async function saveEditUser() {
   const res = await callAppsScript('updateUser', { payload });
   hideLoading();
 
-  alert(res.message);
+  showToast(res.message);
   if (res.success) {
     bootstrap.Modal.getInstance(document.getElementById('modalEditUser')).hide();
     loadAdminDashboard();
@@ -568,22 +682,22 @@ async function handleCreateSchedule() {
     catatan: document.getElementById('schedule-note').value
   };
 
-  if (!scheduleData.tanggal) return alert("Pilih tanggal kerja!");
+  if (!scheduleData.tanggal) return showToast("Pilih tanggal kerja!");
 
   showLoading('Menyimpan jadwal...');
   const res = await callAppsScript('createSchedule', { scheduleData });
   hideLoading();
 
-  alert(res.message);
+  showToast(res.message);
   if (res.success) loadAllSchedules();
 }
 
 async function handleGenerateRandomSchedule() {
   const startDate = document.getElementById('gen-start-date').value;
   const endDate = document.getElementById('gen-end-date').value;
-  const quotaPagi = document.getElementById('gen-quota-pagi').value;
-  const quotaSiang = document.getElementById('gen-quota-siang').value;
   const jenisPKL = document.getElementById('gen-jenis-pkl').value;
+  const quotaPagi = parseInt(document.getElementById('gen-quota-pagi').value, 10) || 0;
+  const quotaSiang = parseInt(document.getElementById('gen-quota-siang').value, 10) || 0;
   
   const checkboxes = document.querySelectorAll('.gen-user-checkbox:checked');
   let users = [];
@@ -594,29 +708,24 @@ async function handleGenerateRandomSchedule() {
     });
   });
 
-  if (!startDate || !endDate) return alert("Tentukan tanggal mulai dan selesai!");
-  if (startDate > endDate) return alert("Tanggal mulai tidak boleh melebihi tanggal selesai!");
-  if (!users.length) return alert("Pilih minimal satu user!");
+  if (!startDate || !endDate) return showToast("Tentukan tanggal mulai dan selesai!");
+  if (startDate > endDate) return showToast("Tanggal mulai tidak boleh melebihi tanggal selesai!");
+  if (!users.length) return showToast("Pilih minimal satu user!");
+  if (quotaPagi <= 0 && quotaSiang <= 0) return showToast("Masukkan kuota minimal untuk salah satu shift!");
 
-  showLoading('Mengacak dan membagi jadwal shift...');
+  showLoading('Membagi jadwal shift berdasarkan kuota harian...');
   const res = await callAppsScript('generateRandomSchedule', { 
-    payload: { 
-      startDate, 
-      endDate, 
-      users,
-      quotaPagi,
-      quotaSiang,
-      jenisPKL
-    } 
+    payload: { startDate, endDate, users, jenisPKL, quotaPagi, quotaSiang } 
   });
   hideLoading();
 
-  alert(res.message);
+  showToast(res.message);
   if (res.success) loadAllSchedules();
 }
 
 async function loadAllSchedules() {
   const tbody = document.getElementById('table-all-schedules-body');
+  if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Memuat daftar jadwal...</td></tr>';
 
   const res = await callAppsScript('getAllSchedules');
@@ -629,7 +738,7 @@ async function loadAllSchedules() {
 
   tbody.innerHTML = allSchedulesList.map(s => `
     <tr>
-      <td><b>${s.tanggalFormatted || formatIndonesianDate(s.tanggal)}</b></td>
+      <td><b>${formatIndonesianDate(s.tanggal)}</b></td>
       <td><b>${s.nama}</b></td>
       <td><span class="badge ${s.shift === 'PAGI' ? 'bg-primary' : 'bg-success'}">${s.shift}</span></td>
       <td><small>${s.catatan}</small></td>
@@ -645,7 +754,7 @@ async function handleDeleteSchedule(rowIndex) {
   showLoading('Menghapus jadwal...');
   const res = await callAppsScript('deleteSchedule', { rowIndex });
   hideLoading();
-  alert(res.message);
+  showToast(res.message);
   if (res.success) loadAllSchedules();
 }
 
@@ -654,38 +763,24 @@ async function handleDeleteSchedulesByRange() {
   const endDate = document.getElementById('del-end-date').value;
   const username = document.getElementById('del-user-select').value;
 
-  if (!startDate || !endDate) {
-    return alert("Harap pilih tanggal mulai dan tanggal selesai!");
-  }
-  if (startDate > endDate) {
-    return alert("Tanggal mulai tidak boleh lebih besar dari tanggal selesai!");
-  }
+  if (!startDate || !endDate) return showToast("Pilih tanggal mulai dan selesai!");
+  if (startDate > endDate) return showToast("Tanggal mulai tidak boleh lebih besar!");
 
-  const userText = username ? `user @${username}` : "SEMUA USER";
-  if (!confirm(`Apakah Anda yakin ingin menghapus jadwal untuk ${userText} dari tanggal ${formatIndonesianDate(startDate)} s/d ${formatIndonesianDate(endDate)}?`)) {
-    return;
-  }
+  if (!confirm(`Hapus jadwal dari ${formatIndonesianDate(startDate)} s/d ${formatIndonesianDate(endDate)}?`)) return;
 
-  showLoading('Menghapus jadwal berdasarkan rentang tanggal...');
+  showLoading('Menghapus jadwal...');
   const res = await callAppsScript('deleteSchedulesByRange', {
-    payload: {
-      startDate,
-      endDate,
-      username
-    }
+    payload: { startDate, endDate, username }
   });
   hideLoading();
 
-  alert(res.message);
-  if (res.success) {
-    document.getElementById('del-start-date').value = '';
-    document.getElementById('del-end-date').value = '';
-    loadAllSchedules();
-  }
+  showToast(res.message);
+  if (res.success) loadAllSchedules();
 }
 
 async function loadAllAttendanceDetails() {
   const tbody = document.getElementById('table-detail-all-body');
+  if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Memuat riwayat...</td></tr>';
 
   const res = await callAppsScript('getAllAttendanceDetails');
@@ -704,6 +799,8 @@ function applyAttendanceFilters() {
   });
 
   const tbody = document.getElementById('table-detail-all-body');
+  if (!tbody) return;
+
   if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Tidak ditemukan data.</td></tr>';
     return;
@@ -721,7 +818,7 @@ function applyAttendanceFilters() {
       <td><small>${r.alasan || '-'}</small></td>
       <td class="no-print text-center">
         <button class="btn btn-xs btn-outline-primary" onclick="openModalEditAttendance(${r.rowIndex}, '${r.jamMasuk}', '${r.jamPulang}', '${r.status}', \`${r.kegiatan || ''}\`, \`${r.alasan || ''}\`)">
-          <i class="fa-solid fa-edit"></i> Edit
+          <i class="fa-solid fa-edit"></i>
         </button>
       </td>
     </tr>
@@ -754,7 +851,7 @@ async function saveEditAttendance() {
   const res = await callAppsScript('updateAttendanceRecord', { payload });
   hideLoading();
 
-  alert(res.message);
+  showToast(res.message);
   if (res.success) {
     bootstrap.Modal.getInstance(document.getElementById('modalEditAttendance')).hide();
     loadAllAttendanceDetails();
@@ -762,7 +859,7 @@ async function saveEditAttendance() {
 }
 
 function exportToExcel() {
-  if (!rawAllDetails || !rawAllDetails.length) return alert("Tidak ada data untuk diexport!");
+  if (!rawAllDetails || !rawAllDetails.length) return showToast("Tidak ada data untuk diexport!");
 
   const dataToExport = rawAllDetails.map(r => ({
     "Tanggal": formatIndonesianDate(r.tanggal),
@@ -778,12 +875,13 @@ function exportToExcel() {
 
   const worksheet = XLSX.utils.json_to_sheet(dataToExport);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Absensi PKL");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Absensi");
   XLSX.writeFile(workbook, "Riwayat_Absensi_PKL.xlsx");
 }
 
 async function loadPendingCutiIzin() {
   const tbody = document.getElementById('table-approve-cuti-body');
+  if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Memuat data pengajuan...</td></tr>';
 
   const res = await callAppsScript('getPendingCutiIzin');
@@ -791,23 +889,21 @@ async function loadPendingCutiIzin() {
 
   const pendingCount = data.filter(r => r.status === 'PENDING').length;
   const badge = document.getElementById('badge-pending-cuti');
-  if (pendingCount > 0) {
-    badge.innerText = pendingCount;
-    badge.classList.remove('d-none');
-  } else {
-    badge.classList.add('d-none');
+  if (badge) {
+    if (pendingCount > 0) {
+      badge.innerText = pendingCount;
+      badge.classList.remove('d-none');
+    } else {
+      badge.classList.add('d-none');
+    }
   }
 
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Belum ada data pengajuan izin/sakit.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Belum ada data pengajuan.</td></tr>';
     return;
   }
 
   tbody.innerHTML = data.map(r => {
-    let statusBadge = `<span class="badge bg-warning text-dark">${r.status}</span>`;
-    if (r.status === 'APPROVED') statusBadge = `<span class="badge bg-success">APPROVED</span>`;
-    if (r.status === 'REJECTED') statusBadge = `<span class="badge bg-danger">REJECTED</span>`;
-
     let actionButtons = '-';
     if (r.status === 'PENDING') {
       actionButtons = `
@@ -815,7 +911,7 @@ async function loadPendingCutiIzin() {
         <button class="btn btn-sm btn-danger fw-bold" onclick="handleApproveCutiIzin('${r.id}', 'REJECTED')">Tolak</button>
       `;
     } else {
-      actionButtons = `<small class="text-muted">Selesai (${r.status})</small>`;
+      actionButtons = `<small class="text-muted">${r.status}</small>`;
     }
 
     return `
@@ -826,7 +922,7 @@ async function loadPendingCutiIzin() {
         <td><small>${formatIndonesianDate(r.tglMulai)} s/d ${formatIndonesianDate(r.tglSelesai)}</small></td>
         <td><small>${r.alasan}</small></td>
         <td>${r.fileUrl && r.fileUrl !== '-' ? `<a href="${r.fileUrl}" target="_blank" class="btn btn-xs btn-outline-info">View File</a>` : '-'}</td>
-        <td>${statusBadge}</td>
+        <td><span class="badge ${r.status === 'APPROVED' ? 'bg-success' : r.status === 'REJECTED' ? 'bg-danger' : 'bg-warning text-dark'}">${r.status}</span></td>
         <td>${actionButtons}</td>
       </tr>
     `;
@@ -834,40 +930,39 @@ async function loadPendingCutiIzin() {
 }
 
 async function handleApproveCutiIzin(id, targetStatus) {
-  showLoading('Memproses approval pengajuan...');
+  showLoading('Memproses approval...');
   const res = await callAppsScript('processCutiIzinApproval', { id, status: targetStatus });
   hideLoading();
-  alert(res.message);
+  showToast(res.message);
   loadPendingCutiIzin();
   loadAdminDashboard();
 }
 
 async function loadPendingUsers() {
   const tbody = document.getElementById('table-approve-body');
-  tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Memuat daftar user...</td></tr>';
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Memuat data user...</td></tr>';
 
   const res = await callAppsScript('getPendingUsers');
   const data = res.data || [];
 
   const pendingCount = data.filter(u => u.status === 'PENDING').length;
   const badge = document.getElementById('badge-pending-count');
-  if (pendingCount > 0) {
-    badge.innerText = pendingCount;
-    badge.classList.remove('d-none');
-  } else {
-    badge.classList.add('d-none');
+  if (badge) {
+    if (pendingCount > 0) {
+      badge.innerText = pendingCount;
+      badge.classList.remove('d-none');
+    } else {
+      badge.classList.add('d-none');
+    }
   }
 
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada data pendaftaran user.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada data pendaftaran user.</td></tr>';
     return;
   }
 
   tbody.innerHTML = data.map(u => {
-    let statusBadge = `<span class="badge bg-warning text-dark">${u.status}</span>`;
-    if (u.status === 'ACTIVE') statusBadge = `<span class="badge bg-success">ACTIVE</span>`;
-    if (u.status === 'REJECTED') statusBadge = `<span class="badge bg-danger">REJECTED</span>`;
-
     let actionButtons = '-';
     if (u.status === 'PENDING') {
       actionButtons = `
@@ -875,7 +970,7 @@ async function loadPendingUsers() {
         <button class="btn btn-sm btn-danger fw-bold" onclick="handleApproveUser('${u.username}', 'rejected')">Tolak</button>
       `;
     } else {
-      actionButtons = `<small class="text-muted">Telah Diprosess</small>`;
+      actionButtons = `<small class="text-muted">${u.status}</small>`;
     }
 
     return `
@@ -883,8 +978,7 @@ async function loadPendingUsers() {
         <td><b>${u.nama}</b><br><small class="text-muted">@${u.username}</small></td>
         <td><small>${u.asalSekolah || '-'}</small></td>
         <td><small>${formatIndonesianDate(u.tglMulai)} s/d ${formatIndonesianDate(u.tglSelesai)}</small></td>
-        <td>${u.totalHari} Hari</td>
-        <td>${statusBadge}</td>
+        <td><span class="badge ${u.status === 'ACTIVE' ? 'bg-success' : u.status === 'REJECTED' ? 'bg-danger' : 'bg-warning text-dark'}">${u.status}</span></td>
         <td>${actionButtons}</td>
       </tr>
     `;
@@ -892,10 +986,10 @@ async function loadPendingUsers() {
 }
 
 async function handleApproveUser(username, targetStatus) {
-  showLoading('Memproses approval...');
+  showLoading('Memproses user...');
   const res = await callAppsScript('processUserApproval', { username, status: targetStatus });
   hideLoading();
-  alert(res.message);
+  showToast(res.message);
   loadPendingUsers();
   loadAdminDashboard();
 }
@@ -912,15 +1006,12 @@ function initAdminMap() {
     if (!adminMap) {
       adminMap = L.map('admin-map').setView([defaultLat, defaultLng], 16);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(adminMap);
-
       adminMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(adminMap);
-      adminCircle = L.circle([defaultLat, defaultLng], { radius: 100, color: 'blue' }).addTo(adminMap);
 
       adminMarker.on('dragend', function(e) {
         const pos = adminMarker.getLatLng();
         document.getElementById('set-lat').value = pos.lat.toFixed(6);
         document.getElementById('set-lng').value = pos.lng.toFixed(6);
-        adminCircle.setLatLng(pos);
       });
     } else {
       adminMap.invalidateSize();
@@ -932,10 +1023,10 @@ async function handleUpdateLocation() {
   const lat = document.getElementById('set-lat').value;
   const lng = document.getElementById('set-lng').value;
 
-  showLoading('Memperbarui koordinat...');
+  showLoading('Memperbarui koordinat lokasi...');
   const res = await callAppsScript('updateLocation', { lat, lng });
   hideLoading();
-  alert(res.message);
+  showToast(res.message);
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -957,6 +1048,7 @@ async function fetchLocationSettings() {
 }
 
 function logout() {
+  document.body.classList.remove('admin-mode');
   currentUser = null;
   capturedBase64 = "";
   localStorage.removeItem('pkl_current_user');
@@ -964,3 +1056,41 @@ function logout() {
   document.getElementById('view-admin').classList.add('d-none');
   document.getElementById('view-auth').classList.remove('d-none');
 }
+
+// Muat ulang data ketika tab navigasi admin dibuka, tanpa memuat ulang seluruh halaman.
+async function refreshAdminCurrentTab(force = false) {
+  const activeTab = document.querySelector('#adminTab .nav-link.active');
+  const target = activeTab ? activeTab.getAttribute('data-bs-target') : '#tab-rekap';
+  switch (target) {
+    case '#tab-rekap':
+      await loadAdminDashboard();
+      break;
+    case '#tab-jadwal':
+      await loadAdminDashboard();
+      loadJadwalSection();
+      if (document.querySelector('#sub-list-jadwal.active, #sub-list-jadwal.show')) await loadAllSchedules();
+      break;
+    case '#tab-detail-all':
+      await loadAllAttendanceDetails();
+      break;
+    case '#tab-approve-cuti':
+      await loadPendingCutiIzin();
+      break;
+    case '#tab-approve':
+      await loadPendingUsers();
+      break;
+    case '#tab-setting':
+      await fetchLocationSettings();
+      initAdminMap();
+      break;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const adminTabs = document.querySelectorAll('#adminTab [data-bs-toggle="tab"]');
+  adminTabs.forEach(tab => {
+    tab.addEventListener('shown.bs.tab', () => {
+      refreshAdminCurrentTab(true);
+    });
+  });
+});
