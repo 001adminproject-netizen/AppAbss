@@ -13,7 +13,7 @@
 </head>
 <body>
 
-<div id="loading-overlay" class="d-none">
+<div id="app-notifications" class="app-notifications" aria-live="polite" aria-atomic="true"></div>\n\n<div id="loading-overlay" class="d-none">
   <div class="spinner-border text-light" style="width: 2.5rem; height: 2.5rem;" role="status">
     <span class="visually-hidden">Loading...</span>
   </div>
@@ -33,12 +33,13 @@
     <div class="p-3 p-sm-4">
       <div id="auth-alert"></div>
 
+      <!-- FORM LOGIN -->
       <form id="form-login" onsubmit="event.preventDefault(); handleLogin();">
         <div class="mb-3">
           <label class="form-label fw-bold text-secondary small">Username / ID</label>
           <div class="input-group">
             <span class="input-group-text bg-light"><i class="fa-solid fa-user text-muted"></i></span>
-            <input type="text" id="login-username" class="form-control" placeholder="Masukkan ID/Username" required>
+            <input type="text" id="login-username" class="form-control" placeholder="Masukkan Username / ID" required>
           </div>
         </div>
         <div class="mb-4">
@@ -54,9 +55,9 @@
         <div class="text-center">
           <small class="text-muted">Belum punya akun? <a href="#" onclick="toggleAuthMode('register'); return false;" class="text-primary fw-bold text-decoration-none">Daftar Akun Baru</a></small>
         </div>
-        
       </form>
 
+      <!-- FORM REGISTER -->
       <form id="form-register" class="d-none" onsubmit="event.preventDefault(); handleRegister();">
         <div class="mb-2">
           <label class="form-label fw-bold text-secondary small">Nama Lengkap</label>
@@ -95,54 +96,144 @@
   </div>
 
   <!-- VIEW USER -->
-  <div id="view-user" class="card-modern d-none mobile-user-card">
-    <div class="card-header-gradient px-3 py-3">
-      <div class="d-flex justify-content-between align-items-center">
+  <div id="view-user" class="card-modern d-none mobile-user-card p-0 border-0 shadow-lg">
+    <div class="app-top-header p-3 text-white">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-1">
+          <h5 class="fw-bold m-0 tracking-wide text-white">HALLO</h5>
+        </div>
         <div class="d-flex align-items-center gap-2">
-          <div class="avatar-circle">
-            <i class="fa-solid fa-user"></i>
+          <button class="btn btn-sm btn-light-transparent text-white rounded-pill px-2.5 py-1" style="font-size: 0.72rem;" onclick="loadTodayAttendance()">
+            <i class="fa-solid fa-rotate me-1"></i> Refresh
+          </button>
+          <span class="badge bg-lime text-dark rounded-pill px-2.5 py-1" style="font-size: 0.72rem;">
+            <i class="fa-solid fa-arrows-up-down me-1"></i> Online
+          </span>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avatar-circle-custom">
+            <i class="fa-solid fa-user text-primary fs-5"></i>
           </div>
-          <div class="text-start">
-            <h6 id="user-welcome" class="fw-bold m-0 text-white text-truncate" style="max-width: 180px;">Siswa PKL</h6>
-            <span id="user-school" class="badge bg-white text-primary fw-bold" style="font-size: 0.7rem;">Sekolah / Instansi</span>
+          <div>
+            <div class="fw-bold text-white small" id="user-welcome">Siswa PKL</div>
+            <small class="text-white-50" id="user-school" style="font-size: 0.75rem;">Sekolah / Instansi</small>
           </div>
         </div>
-        <button class="btn btn-sm btn-light rounded-circle shadow-sm" onclick="logout()" title="Keluar">
-          <i class="fa-solid fa-power-off text-danger"></i>
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm text-white p-1" onclick="logout()" title="Keluar">
+            <i class="fa-solid fa-power-off fs-5"></i>
+          </button>
+        </div>
       </div>
-
-      <div class="mobile-clock-card mt-3">
-        <div class="text-white-50 small fw-semibold" id="current-date">Hari Ini</div>
-        <div class="clock-display text-white" id="current-time">00:00:00</div>
-      </div>
-    </div>
-
-    <div class="mobile-nav-tabs bg-light border-bottom">
-      <button class="nav-btn active" onclick="switchUserTab('absen', this)">
-        <i class="fa-solid fa-clipboard-user"></i> Absen
-      </button>
-      <button class="nav-btn" onclick="switchUserTab('cuti-izin', this); loadMyCutiIzinHistory();">
-        <i class="fa-solid fa-file-signature"></i> Izin/Sakit
-      </button>
-      <button class="nav-btn" onclick="switchUserTab('riwayat', this); loadMyAttendanceHistory();">
-        <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
-      </button>
-      <button class="nav-btn" onclick="switchUserTab('jadwal', this); loadMySchedule();">
-        <i class="fa-solid fa-calendar-days"></i> Jadwal
-      </button>
-      <button class="nav-btn" onclick="switchUserTab('profil', this); renderUserProfile();">
-        <i class="fa-solid fa-id-card"></i> Profil
-      </button>
     </div>
 
     <div class="p-3">
-      <!-- TAB ABSEN USER -->
-      <div class="user-tab-pane" id="user-tab-absen">
+      <!-- PAGE: HOME -->
+      <div id="page-user-home" class="user-page-section">
+        <div class="bg-dark-blue text-white-50 px-3 py-2 rounded-top-4 d-flex justify-content-between align-items-center small" style="font-size: 0.73rem;">
+          <span class="text-truncate" style="max-width: 120px;">Nasional</span>
+          <span class="text-white fw-semibold text-truncate" style="max-width: 190px;" id="user-instansi-card">Sistem Absensi PKL</span>
+        </div>
+
+        <div class="bg-white p-3 rounded-bottom-4 shadow-sm border border-top-0 mb-3">
+          <div class="d-flex justify-content-around text-center py-2">
+            <div>
+              <small class="text-muted d-block mb-1" style="font-size: 0.8rem;">Kehadiran</small>
+              <h4 class="fw-bold mb-0 text-dark"><span id="stat-kehadiran">0</span> <small class="fs-6 fw-normal text-muted">Hari</small></h4>
+            </div>
+            <div class="vr" style="height: 40px; opacity: 0.15;"></div>
+            <div>
+              <small class="text-muted d-block mb-1" style="font-size: 0.8rem;">Izin / Sakit</small>
+              <h4 class="fw-bold mb-0 text-dark"><span id="stat-izin">0</span> <small class="fs-6 fw-normal text-muted">Hari</small></h4>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-center gap-1 my-2">
+            <span class="dot active"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+
+          <div class="bg-blue-container p-3 rounded-4 mt-3">
+            <div class="text-white fw-bold mb-2 ps-1 small" id="current-date-card">Hari Ini</div>
+            <div class="row g-2">
+              <div class="col-6">
+                <button class="btn btn-checkin w-100 p-2.5 text-start text-white border-0 shadow-sm" onclick="openAbsenModal('MASUK')">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold fs-6" id="card-checkin-time">--:-- WIB</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square small opacity-75"></i>
+                  </div>
+                  <small class="d-block opacity-90" style="font-size: 0.73rem;">Check in</small>
+                </button>
+              </div>
+              <div class="col-6">
+                <button class="btn btn-checkout w-100 p-2.5 text-start text-white border-0 shadow-sm" onclick="openAbsenModal('PULANG')">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-bold fs-6" id="card-checkout-time">--:-- WIB</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square small opacity-75"></i>
+                  </div>
+                  <small class="d-block opacity-90" style="font-size: 0.73rem;">Check out</small>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-amber-soft text-amber text-center py-2 px-3 rounded-3 mt-2 small fw-semibold" style="font-size: 0.73rem;">
+            Status Hari Ini: <span id="sync-time-text">Belum Absen</span>
+          </div>
+        </div>
+
+        <h6 class="fw-bold text-dark mb-3">Feature Quick Access</h6>
+        <div class="row g-3 text-center">
+          <div class="col-3">
+            <button class="feature-item border-0 bg-transparent w-100 p-0" onclick="switchUserTab('absen')">
+              <div class="feature-icon-box mx-auto mb-1">
+                <i class="fa-solid fa-camera text-primary"></i>
+              </div>
+              <span class="feature-label">Absen Selfie</span>
+            </button>
+          </div>
+          <div class="col-3">
+            <button class="feature-item border-0 bg-transparent w-100 p-0" onclick="switchUserTab('cuti-izin')">
+              <div class="feature-icon-box mx-auto mb-1">
+                <i class="fa-solid fa-file-pen text-primary"></i>
+              </div>
+              <span class="feature-label">Izin/Sakit</span>
+            </button>
+          </div>
+          <div class="col-3">
+            <button class="feature-item border-0 bg-transparent w-100 p-0" onclick="switchUserTab('riwayat')">
+              <div class="feature-icon-box mx-auto mb-1">
+                <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+              </div>
+              <span class="feature-label">Riwayat</span>
+            </button>
+          </div>
+          <div class="col-3">
+            <button class="feature-item border-0 bg-transparent w-100 p-0" onclick="switchUserTab('jadwal')">
+              <div class="feature-icon-box mx-auto mb-1">
+                <i class="fa-solid fa-calendar-day text-primary"></i>
+              </div>
+              <span class="feature-label">Jadwal Shift</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: ABSEN SELFIE -->
+      <div id="page-user-absen" class="user-page-section d-none bg-white p-3 rounded-4 border shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold text-primary m-0"><i class="fa-solid fa-camera me-1"></i> Form Absensi Foto Selfie</h6>
+          <button class="btn btn-sm btn-light border py-1 px-2" onclick="switchUserTab('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        </div>
+
         <div class="alert alert-primary py-2 px-3 mb-3 border-0 rounded-3 d-flex align-items-center gap-2 small">
           <i class="fa-solid fa-circle-info fs-5"></i>
           <div>
-            <b>Jadwal Pagi:</b> Absen Sebelum Jam 8:15 <br>
+            <b>Jadwal Pagi:</b> Absen Sebelum Jam 08:15 <br>
             <b>Jadwal Siang:</b> Absen Sebelum Jam 12:15
           </div>
         </div>
@@ -150,14 +241,14 @@
         <div class="row g-2 mb-3">
           <div class="col-6">
             <label class="form-label fw-bold text-secondary small m-1">Pilih Shift</label>
-            <select id="absen-shift" class="form-select form-select-lg rounded-3 fs-6" onchange="handleShiftChange()">
+            <select id="absen-shift" class="form-select rounded-3 fs-6" onchange="handleShiftChange()">
               <option value="PAGI">Pagi (08:15)</option>
               <option value="SIANG">Siang (12:15)</option>
             </select>
           </div>
           <div class="col-6">
             <label class="form-label fw-bold text-secondary small m-1">Tipe Absen</label>
-            <select id="absen-tipe" class="form-select form-select-lg rounded-3 fs-6" onchange="handleAbsenTypeChange()">
+            <select id="absen-tipe" class="form-select rounded-3 fs-6" onchange="handleAbsenTypeChange()">
               <option value="MASUK">MASUK</option>
               <option value="PULANG">PULANG</option>
             </select>
@@ -176,13 +267,13 @@
 
           <input type="file" id="input-native-camera" class="d-none" accept="image/*" capture="user" onchange="previewFotoFromCamera(event)">
           
-          <button type="button" class="btn btn-outline-primary w-100 py-2.5 fw-bold mb-3 rounded-3 shadow-sm" onclick="openNativeCamera()">
+          <button type="button" class="btn btn-outline-primary w-100 py-2 fw-bold mb-3 rounded-3 shadow-sm" onclick="openNativeCamera()">
             <i class="fa-solid fa-camera me-2"></i> Buka Kamera Selfie
           </button>
         </div>
 
         <div id="group-keterangan-masuk" class="mb-3">
-          <label class="form-label fw-bold text-secondary small m-1">Keterangan / Alasan (Opsional / Jika Terlambat)</label>
+          <label class="form-label fw-bold text-secondary small m-1">Keterangan / Alasan (Opsional)</label>
           <textarea id="absen-keterangan-masuk" class="form-control rounded-3" rows="2" placeholder="Tuliskan alasan jika Anda datang terlambat..."></textarea>
         </div>
 
@@ -191,13 +282,13 @@
           <textarea id="absen-kegiatan" class="form-control rounded-3" rows="2" placeholder="Tuliskan laporan kegiatan yang telah dikerjakan..."></textarea>
         </div>
 
-        <button id="btn-submit-absen" class="btn btn-success w-100 py-3 fw-bold rounded-3 shadow mb-4 fs-6" onclick="processAbsen()">
+        <button id="btn-submit-absen" class="btn btn-success w-100 py-2.5 fw-bold rounded-3 shadow mb-3 fs-6" onclick="processAbsen()">
           <i class="fa-solid fa-paper-plane me-2"></i> Kirim Absen Sekarang
         </button>
 
         <div class="border-top pt-3">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="fw-bold text-dark m-0 small"><i class="fa-regular fa-calendar-check text-primary me-1"></i>Status Absen Hari Ini</h6>
+            <h6 class="fw-bold text-dark m-0 small"><i class="fa-regular fa-calendar-check text-primary me-1"></i>Catatan Hari Ini</h6>
             <button class="btn btn-sm btn-light border py-1 px-2" onclick="loadTodayAttendance()">
               <i class="fa-solid fa-rotate-right text-secondary"></i>
             </button>
@@ -208,9 +299,12 @@
         </div>
       </div>
 
-      <!-- TAB PENGAJUAN CUTI & IZIN USER -->
-      <div class="user-tab-pane d-none" id="user-tab-cuti-izin">
-        <h6 class="fw-bold mb-3 border-bottom pb-2 text-primary"><i class="fa-solid fa-paper-plane me-1"></i> Form Pengajuan Izin / Sakit</h6>
+      <!-- PAGE: IZIN / SAKIT -->
+      <div id="page-user-cuti-izin" class="user-page-section d-none bg-white p-3 rounded-4 border shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h6 class="fw-bold text-primary m-0"><i class="fa-solid fa-paper-plane me-1"></i> Form Pengajuan Izin / Sakit</h6>
+          <button class="btn btn-sm btn-light border py-1 px-2" onclick="switchUserTab('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        </div>
         
         <form id="form-cuti-izin" onsubmit="event.preventDefault(); handleSubmitCutiIzin();">
           <div class="mb-2">
@@ -262,11 +356,14 @@
         </div>
       </div>
 
-      <!-- TAB RIWAYAT USER -->
-      <div class="user-tab-pane d-none" id="user-tab-riwayat">
+      <!-- PAGE: RIWAYAT ABSENSI -->
+      <div id="page-user-riwayat" class="user-page-section d-none bg-white p-3 rounded-4 border shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="fw-bold m-0 small">Riwayat Absensi Saya</h6>
-          <button class="btn btn-sm btn-outline-primary py-1 px-2" onclick="loadMyAttendanceHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          <div>
+            <button class="btn btn-sm btn-outline-primary py-1 px-2 me-1" onclick="loadMyAttendanceHistory()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            <button class="btn btn-sm btn-light border py-1 px-2" onclick="switchUserTab('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+          </div>
         </div>
         <div id="my-attendance-summary" class="small text-muted mb-2"></div>
         <div class="table-responsive rounded-3 border" style="max-height:360px">
@@ -287,11 +384,14 @@
         </div>
       </div>
 
-      <!-- TAB JADWAL USER -->
-      <div class="user-tab-pane d-none" id="user-tab-jadwal">
+      <!-- PAGE: JADWAL SHIFT -->
+      <div id="page-user-jadwal" class="user-page-section d-none bg-white p-3 rounded-4 border shadow-sm">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="fw-bold text-dark m-0 small"><i class="fa-solid fa-calendar-days text-primary me-1"></i>Jadwal Shift Saya</h6>
-          <button class="btn btn-sm btn-outline-primary py-1 px-2" onclick="loadMySchedule()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+          <div>
+            <button class="btn btn-sm btn-outline-primary py-1 px-2 me-1" onclick="loadMySchedule()"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+            <button class="btn btn-sm btn-light border py-1 px-2" onclick="switchUserTab('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+          </div>
         </div>
         <div class="table-responsive rounded-3 border" style="max-height: 360px;">
           <table class="table table-sm table-striped align-middle mb-0" style="font-size: 0.8rem;">
@@ -309,8 +409,11 @@
         </div>
       </div>
 
-      <!-- TAB PROFIL USER -->
-      <div class="user-tab-pane d-none" id="user-tab-profil">
+      <!-- PAGE: PROFIL USER -->
+      <div id="page-user-profil" class="user-page-section d-none bg-white p-3 rounded-4 border shadow-sm">
+        <div class="d-flex justify-content-end mb-2">
+          <button class="btn btn-sm btn-light border py-1 px-2" onclick="switchUserTab('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+        </div>
         <div class="profile-hero text-center p-4 rounded-4 mb-3">
           <div class="profile-avatar mx-auto mb-3"><i class="fa-solid fa-user-graduate"></i></div>
           <h5 id="profile-nama" class="fw-bold mb-1">Nama Siswa</h5>
@@ -323,17 +426,37 @@
           <div class="profile-info-row"><span><i class="fa-solid fa-calendar-check me-2"></i>Selesai PKL</span><strong id="profile-selesai">-</strong></div>
         </div>
         <button type="button" class="btn btn-outline-danger w-100 mt-4 py-2 fw-bold rounded-3" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-2"></i>Keluar dari Akun</button>
-        <p class="text-muted small text-center mt-3 mb-0">Jika ada data profil yang salah, hubungi admin PKL.</p>
       </div>
+
+    </div>
+
+    <!-- Taskbar Navigasi Bawah -->
+    <div class="mobile-nav-tabs bg-light border-top sticky-bottom">
+      <button class="nav-btn active" id="btn-nav-home" onclick="switchUserTab('home');">
+        <i class="fa-solid fa-house"></i> Home
+      </button>
+      <button class="nav-btn" id="btn-nav-absen" onclick="switchUserTab('absen');">
+        <i class="fa-solid fa-camera"></i> Absen
+      </button>
+      <button class="nav-btn" id="btn-nav-izin" onclick="switchUserTab('cuti-izin');">
+        <i class="fa-solid fa-file-pen"></i> Izin
+      </button>
+
+      <button class="nav-btn" id="btn-nav-riwayat" onclick="switchUserTab('riwayat');">
+        <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+      </button>
+      <button class="nav-btn" id="btn-nav-profil" onclick="switchUserTab('profil');">
+        <i class="fa-solid fa-user"></i> Profil
+      </button>
     </div>
   </div>
 
   <!-- VIEW ADMIN -->
-  <div id="view-admin" class="container bg-white p-3 p-md-4 rounded-4 shadow-sm d-none admin-desktop-view">
+  <div id="view-admin" class="bg-white d-none admin-desktop-view">
     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
       <div>
-        <h4 class="fw-bold m-0 text-primary fs-5"><i class="fa-solid fa-user-shield me-2"></i>Admin Dashboard</h4>
-        <small class="text-muted">Kelola Rekapitulasi, Jadwal, Approval & Pengaturan</small>
+        <h4 class="fw-bold m-0 text-primary fs-5"><i class="fa-solid fa-user-shield me-2"></i>VIU ADMIN</h4>
+        <small class="text-muted">Kelola Rekapitulasi, Jadwal, Approval & Pengaturan Lokasi</small>
       </div>
       <button class="btn btn-outline-danger btn-sm rounded-3 fw-bold" onclick="logout()">
         <i class="fa-solid fa-sign-out-alt me-1"></i> Logout
@@ -343,41 +466,51 @@
     <div class="nav-scroll-wrapper mb-3">
       <ul class="nav nav-pills flex-nowrap" id="adminTab" role="tablist">
         <li class="nav-item">
-          <button class="nav-link active rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-rekap" onclick="loadAdminDashboard()">
+          <button class="nav-link active rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-rekap" >
             <i class="fa-solid fa-chart-pie me-1"></i> Rekap Active
           </button>
         </li>
         <li class="nav-item">
-          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-jadwal" onclick="loadJadwalSection()">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-jadwal" >
             <i class="fa-solid fa-calendar-days me-1"></i> Buat Jadwal
           </button>
         </li>
         <li class="nav-item">
-          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-detail-all" onclick="loadAllAttendanceDetails()">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-detail-all" >
             <i class="fa-solid fa-list-check me-1"></i> Riwayat All
           </button>
         </li>
         <li class="nav-item">
-          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-approve-cuti" onclick="loadPendingCutiIzin()">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-approve-cuti" >
             <i class="fa-solid fa-file-signature me-1"></i> Approve Izin/Sakit <span id="badge-pending-cuti" class="badge bg-danger ms-1 d-none">0</span>
           </button>
         </li>
         <li class="nav-item">
-          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-approve" onclick="loadPendingUsers()">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-approve" >
             <i class="fa-solid fa-user-clock me-1"></i> Approve User <span id="badge-pending-count" class="badge bg-danger ms-1 d-none">0</span>
           </button>
         </li>
         <li class="nav-item">
-          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-setting" onclick="initAdminMap()">
-            <i class="fa-solid fa-location-dot me-1"></i> Lokasi
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-setting" >
+            <i class="fa-solid fa-location-dot me-1"></i> Lokasi Kantor
           </button>
         </li>
       </ul>
     </div>
 
     <div class="tab-content pt-2">
-      <!-- REKAP ACTIVE USER -->
+      <!-- TAB REKAP -->
       <div class="tab-pane fade show active" id="tab-rekap">
+        <div class="admin-dashboard-intro d-flex flex-nowrap justify-content-between align-items-center gap-3 mb-3">
+          <div><span class="admin-eyebrow">RINGKASAN SISTEM</span><h5 class="fw-bold mb-1">Dashboard Kehadiran</h5><p class="text-muted small mb-0">Ringkasan peserta PKL dan kehadiran terkini.</p></div>
+          <button class="btn btn-primary btn-sm rounded-3 fw-bold" onclick="refreshAdminCurrentTab(true)"><i class="fa-solid fa-rotate me-1"></i> Perbarui Data</button>
+        </div>
+        <div class="row g-3 mb-4" id="admin-dashboard-stats">
+          <div class="col-4"><div class="admin-stat-card"><span class="admin-stat-icon blue"><i class="fa-solid fa-users"></i></span><div><small>Total Peserta</small><h3 id="admin-stat-users">—</h3></div></div></div>
+          <div class="col-4"><div class="admin-stat-card"><span class="admin-stat-icon green"><i class="fa-solid fa-user-check"></i></span><div><small>Total Kehadiran</small><h3 id="admin-stat-masuk">—</h3></div></div></div>
+          <div class="col-4"><div class="admin-stat-card"><span class="admin-stat-icon amber"><i class="fa-solid fa-file-circle-exclamation"></i></span><div><small>Total Izin & Sakit</small><h3 id="admin-stat-izin">—</h3></div></div></div>
+        </div>
+        <div class="admin-table-panel"><div class="d-flex justify-content-between align-items-center mb-2"><h6 class="fw-bold mb-0">Rekap Peserta PKL</h6><span class="small text-muted" id="admin-last-updated">Memuat data...</span></div>
         <div class="table-responsive">
           <table class="table table-hover align-middle border small">
             <thead class="table-light">
@@ -385,21 +518,21 @@
                 <th>Username / Nama</th>
                 <th>Asal Sekolah</th>
                 <th>Periode PKL</th>
-                <th>Total (M / I / S / C)</th>
-                <th>Persentase & Hasil</th>
+                <th>Total (Masuk / Izin / Sakit)</th>
+                <th>Status Periode</th>
                 <th class="text-center">Aksi</th>
               </tr>
             </thead>
             <tbody id="table-rekap-body"></tbody>
           </table>
-        </div>
+        </div></div>
       </div>
 
-      <!-- BUAT JADWAL -->
+      <!-- TAB BUAT JADWAL -->
       <div class="tab-pane fade" id="tab-jadwal">
         <ul class="nav nav-tabs mb-3" id="subJadwalTab" role="tablist">
           <li class="nav-item">
-            <button class="nav-link active small fw-bold" data-bs-toggle="tab" data-bs-target="#sub-buat-manual">Manual / Random</button>
+            <button class="nav-link active small fw-bold" data-bs-toggle="tab" data-bs-target="#sub-buat-manual">Manual / Auto Generate</button>
           </li>
           <li class="nav-item">
             <button class="nav-link small fw-bold text-danger" data-bs-toggle="tab" data-bs-target="#sub-hapus-rentang">
@@ -432,7 +565,7 @@
                   </select>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label small fw-bold m-0">Catatan/Tugas</label>
+                  <label class="form-label small fw-bold m-0">Catatan / Tugas</label>
                   <input type="text" id="schedule-note" class="form-control form-control-sm" placeholder="Opsional">
                 </div>
                 <button class="btn btn-primary btn-sm fw-bold w-100" onclick="handleCreateSchedule()">
@@ -441,8 +574,7 @@
               </div>
 
               <div class="col-md-7">
-                <h6 class="fw-bold text-dark mb-2 small"><i class="fa-solid fa-wand-magic-sparkles text-success me-1"></i>Generate Shift Otomatis & Adil</h6>
-                
+                <h6 class="fw-bold text-dark mb-2 small"><i class="fa-solid fa-wand-magic-sparkles text-success me-1"></i>Generate Shift Otomatis</h6>
                 <div class="row g-2 mb-2">
                   <div class="col-6">
                     <label class="form-label small fw-bold m-0">Tgl Mulai</label>
@@ -455,51 +587,46 @@
                 </div>
 
                 <div class="row g-2 mb-2 bg-light p-2 rounded border">
-                  <div class="col-12 mb-1">
-                    <label class="form-label small fw-bold text-dark m-0">Jenis Hari PKL (Shift Jadwal)</label>
+                  <div class="col-12 mb-2">
+                    <label class="form-label small fw-bold text-dark m-0">Hari Kerja PKL</label>
                     <select id="gen-jenis-pkl" class="form-select form-select-sm fw-bold text-primary">
                       <option value="5_HARI">5 Hari Kerja (Senin - Jumat)</option>
                       <option value="7_HARI">7 Hari Kerja (Termasuk Sabtu & Minggu)</option>
                     </select>
                   </div>
                   <div class="col-6">
-                    <label class="form-label small fw-bold text-primary m-0">Kuota Shift Pagi / Hari</label>
-                    <input type="number" id="gen-quota-pagi" class="form-control form-control-sm" value="2" min="0" placeholder="Jml Orang">
+                    <label class="form-label small fw-bold text-dark m-0">Kuota Shift Pagi / Hari</label>
+                    <input type="number" id="gen-quota-pagi" class="form-control form-control-sm" value="2" min="1" required>
                   </div>
                   <div class="col-6">
-                    <label class="form-label small fw-bold text-success m-0">Kuota Shift Siang / Hari</label>
-                    <input type="number" id="gen-quota-siang" class="form-control form-control-sm" value="2" min="0" placeholder="Jml Orang">
+                    <label class="form-label small fw-bold text-dark m-0">Kuota Shift Siang / Hari</label>
+                    <input type="number" id="gen-quota-siang" class="form-control form-control-sm" value="2" min="1" required>
                   </div>
                 </div>
 
                 <div class="mb-2">
                   <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label small fw-bold m-0">Pilih User Terlibat</label>
+                    <label class="form-label small fw-bold m-0">Pilih User</label>
                     <div class="btn-group btn-group-sm">
-                      <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="toggleAllUsers(true)">Pilih Semua</button>
-                      <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="toggleAllUsers(false)">Hapus Semua</button>
+                      <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="toggleAllUsers(true)">Semua</button>
+                      <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1" onclick="toggleAllUsers(false)">Batal</button>
                     </div>
                   </div>
                   <div id="gen-user-checkboxes" class="border p-2 rounded bg-light" style="max-height: 100px; overflow-y: auto;"></div>
                 </div>
 
                 <button class="btn btn-success btn-sm fw-bold w-100 mt-2" onclick="handleGenerateRandomSchedule()">
-                  <i class="fa-solid fa-shuffle me-1"></i> Generate Shift Adil
+                  <i class="fa-solid fa-shuffle me-1"></i> Generate Shift Sekarang
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- SUB TAB HAPUS JADWAL DENGAN RENTANG TANGGAL -->
           <div class="tab-pane fade" id="sub-hapus-rentang">
             <div class="card p-3 border-danger shadow-sm" style="max-width: 600px; margin: 0 auto;">
               <h6 class="fw-bold text-danger mb-2 small">
                 <i class="fa-solid fa-calendar-xmark me-1"></i> Hapus Jadwal Menurut Rentang Tanggal
               </h6>
-              <p class="text-muted small mb-3">
-                Gunakan fitur ini jika ingin mengosongkan jadwal pada periode tertentu sebelum membuat jadwal baru secara otomatis atau manual.
-              </p>
-
               <div class="row g-2 mb-2">
                 <div class="col-6">
                   <label class="form-label small fw-bold m-0">Tgl Mulai</label>
@@ -510,15 +637,12 @@
                   <input type="date" id="del-end-date" class="form-control form-control-sm">
                 </div>
               </div>
-
               <div class="mb-3">
                 <label class="form-label small fw-bold m-0">Pilih User (Opsional)</label>
                 <select id="del-user-select" class="form-select form-select-sm">
                   <option value="">-- Semua User / Siswa PKL --</option>
                 </select>
-                <small class="text-muted" style="font-size: 0.75rem;">Pilih user spesifik atau biarkan "Semua User" untuk menghapus jadwal seluruh peserta di rentang tanggal tersebut.</small>
               </div>
-
               <button class="btn btn-danger btn-sm fw-bold w-100" onclick="handleDeleteSchedulesByRange()">
                 <i class="fa-solid fa-trash me-1"></i> Hapus Jadwal
               </button>
@@ -544,17 +668,16 @@
         </div>
       </div>
 
-      <!-- RIWAYAT ALL + DOWNLOAD + PRINT -->
+      <!-- TAB RIWAYAT ALL -->
       <div class="tab-pane fade" id="tab-detail-all">
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 no-print">
           <div class="d-flex gap-2 flex-wrap">
-            <input type="text" id="filter-search-name" class="form-control form-control-sm" placeholder="Cari Nama / Username..." onkeyup="applyAttendanceFilters()">
+            <input type="text" id="filter-search-name" class="form-control form-control-sm" placeholder="Cari Nama..." onkeyup="applyAttendanceFilters()">
             <select id="filter-status" class="form-select form-select-sm" onchange="applyAttendanceFilters()">
               <option value="">-- Semua Status --</option>
               <option value="HADIR">HADIR / MASUK</option>
               <option value="IZIN">IZIN</option>
               <option value="SAKIT">SAKIT</option>
-              <option value="CUTI">IZIN/SAKIT</option>
             </select>
           </div>
           <div class="d-flex gap-2">
@@ -564,7 +687,6 @@
         </div>
 
         <div id="print-section">
-          <h5 class="d-none d-print-block fw-bold text-center mb-3">Laporan Riwayat Absensi & Kegiatan PKL</h5>
           <div class="table-responsive">
             <table class="table table-striped align-middle small border" id="table-all-details">
               <thead class="table-dark">
@@ -575,8 +697,8 @@
                   <th>Pulang</th>
                   <th>Status</th>
                   <th>Terlambat</th>
-                  <th>Laporan Kegiatan</th>
-                  <th>Alasan / Ket</th>
+                  <th>Kegiatan</th>
+                  <th>Ket</th>
                   <th class="no-print text-center">Aksi</th>
                 </tr>
               </thead>
@@ -586,7 +708,7 @@
         </div>
       </div>
 
-      <!-- APPROVE IZIN & SAKIT -->
+      <!-- TAB APPROVE IZIN & SAKIT -->
       <div class="tab-pane fade" id="tab-approve-cuti">
         <div class="table-responsive">
           <table class="table table-hover align-middle border small">
@@ -607,7 +729,7 @@
         </div>
       </div>
 
-      <!-- APPROVE PENDAFTARAN USER -->
+      <!-- TAB APPROVE USER -->
       <div class="tab-pane fade" id="tab-approve">
         <div class="table-responsive">
           <table class="table table-hover align-middle border small">
@@ -615,8 +737,7 @@
               <tr>
                 <th>Username / Nama</th>
                 <th>Asal Sekolah</th>
-                <th>Periode</th>
-                <th>Target Hari</th>
+                <th>Periode PKL</th>
                 <th>Status</th>
                 <th>Aksi</th>
               </tr>
@@ -626,14 +747,14 @@
         </div>
       </div>
 
-      <!-- LOKASI -->
+      <!-- TAB LOKASI KANTOR -->
       <div class="tab-pane fade" id="tab-setting">
         <div class="row g-2" style="max-width: 600px;">
-          <div class="col-6"><label class="form-label small fw-bold mb-0">Latitude</label><input type="text" id="set-lat" class="form-control form-control-sm" readonly></div>
-          <div class="col-6"><label class="form-label small fw-bold mb-0">Longitude</label><input type="text" id="set-lng" class="form-control form-control-sm" readonly></div>
+          <div class="col-6"><label class="form-label small fw-bold mb-0">Latitude Kantor</label><input type="text" id="set-lat" class="form-control form-control-sm" readonly></div>
+          <div class="col-6"><label class="form-label small fw-bold mb-0">Longitude Kantor</label><input type="text" id="set-lng" class="form-control form-control-sm" readonly></div>
           <div class="col-12"><div id="admin-map" style="height: 250px; border-radius: 10px;"></div></div>
           <div class="col-12 mt-2">
-            <button id="btn-update-location" class="btn btn-success btn-sm fw-bold w-100" onclick="handleUpdateLocation()">Perbarui Koordinat Kantor</button>
+            <button id="btn-update-location" class="btn btn-success btn-sm fw-bold w-100" onclick="handleUpdateLocation()">Simpan Lokasi Kantor</button>
           </div>
         </div>
       </div>
@@ -642,62 +763,44 @@
 
 </div>
 
-<!-- MODAL EDIT DATA USER (ADMIN) -->
+<!-- MODAL EDIT DATA USER -->
 <div class="modal fade" id="modalEditUser" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h6 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-1"></i> Edit Data User</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h6 class="modal-title fw-bold">Edit Data User</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="edit-user-username">
-        <div class="mb-2">
-          <label class="form-label small fw-bold m-0">Nama Lengkap</label>
-          <input type="text" id="edit-user-nama" class="form-control form-control-sm">
-        </div>
-        <div class="mb-2">
-          <label class="form-label small fw-bold m-0">Asal Sekolah / Instansi</label>
-          <input type="text" id="edit-user-sekolah" class="form-control form-control-sm">
-        </div>
+        <div class="mb-2"><label class="form-label small fw-bold m-0">Nama Lengkap</label><input type="text" id="edit-user-nama" class="form-control form-control-sm"></div>
+        <div class="mb-2"><label class="form-label small fw-bold m-0">Asal Sekolah</label><input type="text" id="edit-user-sekolah" class="form-control form-control-sm"></div>
         <div class="row g-2 mb-2">
-          <div class="col-6">
-            <label class="form-label small fw-bold m-0">Tgl Mulai</label>
-            <input type="date" id="edit-user-mulai" class="form-control form-control-sm">
-          </div>
-          <div class="col-6">
-            <label class="form-label small fw-bold m-0">Tgl Selesai</label>
-            <input type="date" id="edit-user-selesai" class="form-control form-control-sm">
-          </div>
+          <div class="col-6"><label class="form-label small fw-bold m-0">Tgl Mulai</label><input type="date" id="edit-user-mulai" class="form-control form-control-sm"></div>
+          <div class="col-6"><label class="form-label small fw-bold m-0">Tgl Selesai</label><input type="date" id="edit-user-selesai" class="form-control form-control-sm"></div>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="saveEditUser()">Simpan Perubahan</button>
+        <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="saveEditUser()">Simpan</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MODAL EDIT RIWAYAT ABSENSI (ADMIN) -->
+<!-- MODAL EDIT RIWAYAT ABSENSI -->
 <div class="modal fade" id="modalEditAttendance" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h6 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-1"></i> Edit Riwayat Absensi</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <h6 class="modal-title fw-bold">Edit Riwayat Absensi</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="edit-att-rowIndex">
         <div class="row g-2 mb-2">
-          <div class="col-6">
-            <label class="form-label small fw-bold m-0">Jam Masuk</label>
-            <input type="text" id="edit-att-masuk" class="form-control form-control-sm" placeholder="08:15:00">
-          </div>
-          <div class="col-6">
-            <label class="form-label small fw-bold m-0">Jam Pulang</label>
-            <input type="text" id="edit-att-pulang" class="form-control form-control-sm" placeholder="16:00:00">
-          </div>
+          <div class="col-6"><label class="form-label small fw-bold m-0">Jam Masuk</label><input type="text" id="edit-att-masuk" class="form-control form-control-sm"></div>
+          <div class="col-6"><label class="form-label small fw-bold m-0">Jam Pulang</label><input type="text" id="edit-att-pulang" class="form-control form-control-sm"></div>
         </div>
         <div class="mb-2">
           <label class="form-label small fw-bold m-0">Status</label>
@@ -706,21 +809,14 @@
             <option value="MASUK">MASUK</option>
             <option value="IZIN">IZIN</option>
             <option value="SAKIT">SAKIT</option>
-            <option value="CUTI">IZIN/SAKIT</option>
           </select>
         </div>
-        <div class="mb-2">
-          <label class="form-label small fw-bold m-0">Laporan Kegiatan</label>
-          <textarea id="edit-att-kegiatan" class="form-control form-control-sm" rows="2"></textarea>
-        </div>
-        <div class="mb-2">
-          <label class="form-label small fw-bold m-0">Alasan / Keterangan</label>
-          <textarea id="edit-att-alasan" class="form-control form-control-sm" rows="2"></textarea>
-        </div>
+        <div class="mb-2"><label class="form-label small fw-bold m-0">Laporan Kegiatan</label><textarea id="edit-att-kegiatan" class="form-control form-control-sm" rows="2"></textarea></div>
+        <div class="mb-2"><label class="form-label small fw-bold m-0">Alasan</label><textarea id="edit-att-alasan" class="form-control form-control-sm" rows="2"></textarea></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="saveEditAttendance()">Simpan Riwayat</button>
+        <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="saveEditAttendance()">Simpan</button>
       </div>
     </div>
   </div>
@@ -730,26 +826,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="script.js"></script>
-
-
-<script>
-  // Tombol demo hanya mengisi kolom login; verifikasi akun tetap memakai handleLogin() dan backend asli.
-  function fillDemoLogin(role) {
-    const accounts = {
-      admin: { username: 'demo.admin', password: 'AdminDemo2026!' },
-      user: { username: 'demo.user', password: 'UserDemo2026!' }
-    };
-    const account = accounts[role];
-    if (!account) return;
-    const username = document.getElementById('login-username');
-    const password = document.getElementById('login-password');
-    if (username && password) {
-      username.value = account.username;
-      password.value = account.password;
-      password.focus();
-    }
-  }
-</script>
 
 </body>
 </html>
