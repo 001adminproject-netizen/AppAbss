@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -54,6 +53,35 @@
         </button>
         <div class="text-center">
           <small class="text-muted">Belum punya akun? <a href="#" onclick="toggleAuthMode('register'); return false;" class="text-primary fw-bold text-decoration-none">Daftar Akun Baru</a></small>
+        </div>
+
+        <!-- AKUN DEMO: tombol ini hanya mengisi form login, autentikasi tetap dilakukan backend -->
+        <div class="demo-login-panel mt-4 p-3 rounded-4">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <i class="fa-solid fa-flask text-primary"></i>
+            <span class="fw-bold text-dark">Coba Akun Demo</span>
+          </div>
+          <small class="text-muted d-block mb-3">Pilih akun untuk mengisi username dan password secara otomatis.</small>
+          <div class="row g-2">
+            <div class="col-6">
+              <button type="button" class="btn btn-outline-primary w-100 fw-bold" onclick="fillDemoLogin('admin')">
+                <i class="fa-solid fa-shield-halved me-1"></i> Demo Admin
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-outline-success w-100 fw-bold" onclick="fillDemoLogin('user')">
+                <i class="fa-solid fa-user me-1"></i> Demo User
+              </button>
+            </div>
+          </div>
+          <div class="mt-3 small text-muted">
+            <div><strong>Admin:</strong> demo.admin / AdminDemo2026!</div>
+            <div><strong>User:</strong> demo.user / UserDemo2026!</div>
+          </div>
+          <div class="alert alert-warning py-2 px-3 mt-3 mb-0 small">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Akun harus sudah terdaftar di backend agar login berhasil. Tombol demo tidak melewati sistem keamanan.
+          </div>
         </div>
       </form>
 
@@ -130,6 +158,9 @@
       </button>
       <button class="nav-btn" onclick="switchUserTab('jadwal', this); loadMySchedule();">
         <i class="fa-solid fa-calendar-days"></i> Jadwal
+      </button>
+      <button class="nav-btn" onclick="switchUserTab('profil', this); renderUserProfile();">
+        <i class="fa-solid fa-id-card"></i> Profil
       </button>
     </div>
 
@@ -305,11 +336,28 @@
           </table>
         </div>
       </div>
+
+      <!-- TAB PROFIL USER -->
+      <div class="user-tab-pane d-none" id="user-tab-profil">
+        <div class="profile-hero text-center p-4 rounded-4 mb-3">
+          <div class="profile-avatar mx-auto mb-3"><i class="fa-solid fa-user-graduate"></i></div>
+          <h5 id="profile-nama" class="fw-bold mb-1">Nama Siswa</h5>
+          <div id="profile-username" class="text-muted small">@username</div>
+          <span class="badge bg-primary-subtle text-primary mt-2">Peserta PKL</span>
+        </div>
+        <div class="profile-info-list">
+          <div class="profile-info-row"><span><i class="fa-solid fa-school me-2"></i>Asal Sekolah / Kampus</span><strong id="profile-sekolah">-</strong></div>
+          <div class="profile-info-row"><span><i class="fa-solid fa-calendar-plus me-2"></i>Mulai PKL</span><strong id="profile-mulai">-</strong></div>
+          <div class="profile-info-row"><span><i class="fa-solid fa-calendar-check me-2"></i>Selesai PKL</span><strong id="profile-selesai">-</strong></div>
+        </div>
+        <button type="button" class="btn btn-outline-danger w-100 mt-4 py-2 fw-bold rounded-3" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-2"></i>Keluar dari Akun</button>
+        <p class="text-muted small text-center mt-3 mb-0">Jika ada data profil yang salah, hubungi admin PKL.</p>
+      </div>
     </div>
   </div>
 
   <!-- VIEW ADMIN -->
-  <div id="view-admin" class="container bg-white p-3 p-md-4 rounded-4 shadow-sm d-none" style="max-width: 1100px;">
+  <div id="view-admin" class="container bg-white p-3 p-md-4 rounded-4 shadow-sm d-none admin-desktop-view">
     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
       <div>
         <h4 class="fw-bold m-0 text-primary fs-5"><i class="fa-solid fa-user-shield me-2"></i>Admin Dashboard</h4>
@@ -710,6 +758,26 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="script.js"></script>
+
+
+<script>
+  // Tombol demo hanya mengisi kolom login; verifikasi akun tetap memakai handleLogin() dan backend asli.
+  function fillDemoLogin(role) {
+    const accounts = {
+      admin: { username: 'demo.admin', password: 'AdminDemo2026!' },
+      user: { username: 'demo.user', password: 'UserDemo2026!' }
+    };
+    const account = accounts[role];
+    if (!account) return;
+    const username = document.getElementById('login-username');
+    const password = document.getElementById('login-password');
+    if (username && password) {
+      username.value = account.username;
+      password.value = account.password;
+      password.focus();
+    }
+  }
+</script>
 
 </body>
 </html>
