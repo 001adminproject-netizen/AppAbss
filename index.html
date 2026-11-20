@@ -471,6 +471,11 @@
           </button>
         </li>
         <li class="nav-item">
+          <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-belum-absen">
+            <i class="fa-solid fa-user-xmark me-1"></i> Belum Absen <span id="badge-belum-absen" class="badge bg-warning text-dark ms-1 d-none">0</span>
+          </button>
+        </li>
+        <li class="nav-item">
           <button class="nav-link rounded-3 text-nowrap" data-bs-toggle="tab" data-bs-target="#tab-jadwal" >
             <i class="fa-solid fa-calendar-days me-1"></i> Buat Jadwal
           </button>
@@ -518,6 +523,7 @@
                 <th>Username / Nama</th>
                 <th>Asal Sekolah</th>
                 <th>Periode PKL</th>
+                <th>Mode Lokasi</th>
                 <th>Total (Masuk / Izin / Sakit)</th>
                 <th>Status Periode</th>
                 <th class="text-center">Aksi</th>
@@ -526,6 +532,76 @@
             <tbody id="table-rekap-body"></tbody>
           </table>
         </div></div>
+      </div>
+
+      <!-- TAB BELUM ABSEN -->
+      <div class="tab-pane fade" id="tab-belum-absen">
+        <div class="admin-dashboard-intro d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+          <div>
+            <span class="admin-eyebrow">MONITORING HARIAN</span>
+            <h5 class="fw-bold mb-1">Pengecekan Peserta Belum Absen</h5>
+            <p class="text-muted small mb-0" id="unattended-subtitle">Membandingkan jadwal shift aktif terhadap absensi & pengajuan izin/sakit.</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-success btn-sm rounded-3 fw-bold" onclick="copyUnattendedList()">
+              <i class="fa-regular fa-copy me-1"></i> Salin Daftar
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-3 fw-bold" onclick="exportUnattendedExcel()">
+              <i class="fa-solid fa-file-excel me-1"></i> Export Excel
+            </button>
+            <button type="button" class="btn btn-primary btn-sm rounded-3 fw-bold" onclick="loadUnattendedUsers()">
+              <i class="fa-solid fa-rotate me-1"></i> Cek Sekarang
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-table-panel mb-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label small fw-bold mb-1">Tanggal Pengecekan</label>
+              <input type="date" id="filter-unattended-date" class="form-control form-control-sm" onchange="loadUnattendedUsers()">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold mb-1">Filter Shift</label>
+              <select id="filter-unattended-shift" class="form-select form-select-sm" onchange="loadUnattendedUsers()">
+                <option value="">Semua Shift</option>
+                <option value="PAGI">Shift PAGI (08:15)</option>
+                <option value="SIANG">Shift SIANG (12:15)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-bold mb-1">Cari Nama / Username / Sekolah</label>
+              <input type="text" id="search-unattended" class="form-control form-control-sm" placeholder="Ketik kata kunci..." oninput="renderUnattendedTable()">
+            </div>
+            <div class="col-md-2">
+              <div class="p-2 rounded-3 bg-warning-subtle border border-warning text-center">
+                <small class="d-block text-muted" style="font-size: 11px;">Belum Absen</small>
+                <strong class="fs-5 text-dark" id="unattended-total-count">0</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-table-panel">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle border small mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px;">No</th>
+                  <th>Username / Nama</th>
+                  <th>Asal Sekolah</th>
+                  <th>Shift Jadwal</th>
+                  <th>Jam Masuk</th>
+                  <th>Catatan Jadwal</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="table-belum-absen-body">
+                <tr><td colspan="7" class="text-center text-muted py-3">Klik "Cek Sekarang" untuk memuat data.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- TAB BUAT JADWAL -->
@@ -589,10 +665,25 @@
                 <div class="row g-2 mb-2 bg-light p-2 rounded border">
                   <div class="col-12 mb-2">
                     <label class="form-label small fw-bold text-dark m-0">Hari Kerja PKL</label>
-                    <select id="gen-jenis-pkl" class="form-select form-select-sm fw-bold text-primary">
-                      <option value="5_HARI">5 Hari Kerja (Senin - Jumat)</option>
-                      <option value="7_HARI">7 Hari Kerja (Termasuk Sabtu & Minggu)</option>
+                    <select id="gen-jenis-pkl" class="form-select form-select-sm fw-bold text-primary" onchange="toggleCustomOffDays()">
+                      <option value="5_HARI">5 Hari Kerja (Libur Sabtu & Minggu)</option>
+                      <option value="7_HARI">7 Hari Kerja (Full / Ikut Jadwal Pembimbing)</option>
+                      <option value="CUSTOM">Fleksibel / Pilih Hari & Tanggal Libur Tertentu</option>
                     </select>
+                  </div>
+                  <div class="col-12 mb-2 d-none" id="wrapper-custom-off-days">
+                    <label class="form-label small fw-bold text-dark m-0">Pilih Hari Libur Mingguan (Opsional):</label>
+                    <div class="d-flex flex-wrap gap-2 mt-1 mb-2">
+                      <label class="form-check-label small"><input type="checkbox" class="form-check-input gen-off-day" value="1"> Sen</label>
+                      <label class="form-check-label small"><input type="checkbox" class="form-check-input gen-off-day" value="2"> Sel</label>
+                      <label class="form-check-label small"><input type="checkbox" class="form-check-input gen-off-day" value="3"> Rab</label>
+                      <label class="form-check-label small"><input type="checkbox" class="form-check-input gen-off-day" value="4"> Kam</label>
+                      <label class="form-check-label small"><input type="checkbox" class="form-check-input gen-off-day" value="5"> Jum</label>
+                      <label class="form-check-label small"><input type="checkbox" class="form-check-input gen-off-day" value="6"> Sab</label>
+                      <label class="form-check-label small"><input type="checkbox" class="form-check-input gen-off-day" value="0"> Min</label>
+                    </div>
+                    <label class="form-label small fw-bold text-dark m-0">Tanggal Libur Khusus (pisahkan koma, format YYYY-MM-DD):</label>
+                    <input type="text" id="gen-off-dates" class="form-control form-control-sm" placeholder="Contoh: 2026-11-24, 2026-11-28">
                   </div>
                   <div class="col-6">
                     <label class="form-label small fw-bold text-dark m-0">Kuota Shift Pagi / Hari</label>
@@ -778,6 +869,13 @@
         <div class="row g-2 mb-2">
           <div class="col-6"><label class="form-label small fw-bold m-0">Tgl Mulai</label><input type="date" id="edit-user-mulai" class="form-control form-control-sm"></div>
           <div class="col-6"><label class="form-label small fw-bold m-0">Tgl Selesai</label><input type="date" id="edit-user-selesai" class="form-control form-control-sm"></div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-bold m-0">Mode Lokasi Absensi (Pembimbing)</label>
+          <select id="edit-user-bebas-lokasi" class="form-select form-select-sm">
+            <option value="false">Stay di Kantor (Shift Pagi wajib radius 100m, Shift Siang bebas lokasi)</option>
+            <option value="true">Ikut Pembimbing Lapangan (Bebas Lokasi di semua shift)</option>
+          </select>
         </div>
       </div>
       <div class="modal-footer">
