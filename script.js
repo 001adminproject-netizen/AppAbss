@@ -23,7 +23,7 @@ function showToast(message, type = 'info', duration = 4200) {
   window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, duration);
 }
 
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxANnx_VfPzPdtTeaf-G943Yw_SMHigRfYfx5pXz_emj23Mht0IJlDNPwqdbfl0VDYG/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz_4IioV7ODLyKe3P0NektIcLh7jz9K_5-sBKCiUSUJc71cYeiwK4zqJr08hLhHx1pxpQ/exec";
 
 let currentUser = null;
 let targetLocation = null;
@@ -262,15 +262,14 @@ function renderUserProfile() {
 
 function handleShiftChange() {
   const shift = document.getElementById('absen-shift').value;
-  const day = new Date().getDay();
-  const isWeekend = (day === 0 || day === 6);
+  const isLapangan = Boolean(currentUser && currentUser.bebasLokasi);
 
-  if (isWeekend) {
-    showToast("Info jadwal: akhir pekan tetap mengikuti jadwal yang ditetapkan admin.", "info");
-  } else if (shift === 'SIANG') {
-    showToast("Shift Siang dipilih. Pastikan shift ini sesuai jadwal admin.", "info");
+  if (shift === 'SIANG') {
+    showToast("Shift Siang: Absen masuk & pulang bebas lokasi (di mana saja) sesuai jadwal.", "info");
+  } else if (isLapangan) {
+    showToast("Shift Pagi (Mode Lapangan): Absen masuk & pulang bebas lokasi mengikuti pembimbing.", "info");
   } else {
-    showToast("Shift Pagi dipilih. Pastikan shift ini sesuai jadwal admin.", "info");
+    showToast("Shift Pagi (Mode Kantor): Wajib berada dalam radius 100m dari kantor.", "info");
   }
 }
 
@@ -323,12 +322,14 @@ function processAbsen() {
   if (tipe === 'MASUK') detailText = document.getElementById('absen-keterangan-masuk').value.trim();
   if (tipe === 'PULANG') detailText = document.getElementById('absen-kegiatan').value.trim();
 
-  const today = new Date();
-  const dayOfWeek = today.getDay(); 
-  const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
   const isShiftSiangBebas = (shift === 'SIANG');
-  
-  const wajibRadius = !currentUser.bebasLokasi && !isShiftSiangBebas && !isWeekend;
+  const isPembimbingLapangan = Boolean(currentUser.bebasLokasi);
+
+  // Aturan lokasi:
+  // 1. Shift SIANG: selalu bisa absen masuk & pulang di mana saja.
+  // 2. Peserta ikut pembimbing lapangan (bebasLokasi = true): bebas lokasi di semua shift.
+  // 3. Peserta stay di kantor (bebasLokasi = false) pada Shift PAGI: wajib dalam radius 100m kantor.
+  const wajibRadius = !isShiftSiangBebas && !isPembimbingLapangan;
 
   if (wajibRadius && (tipe === 'MASUK' || tipe === 'PULANG')) {
     if (!navigator.geolocation) {
@@ -594,13 +595,18 @@ async function loadAdminDashboard() {
       <td><small>${u.asalSekolah || '-'}</small></td>
       <td><small>${formatIndonesianDate(u.tglMulai)} s/d ${formatIndonesianDate(u.tglSelesai)}</small></td>
       <td>
+        ${u.bebasLokasi
+          ? '<span class="badge bg-info text-dark"><i class="fa-solid fa-person-walking-luggage me-1"></i>Lapangan (Bebas)</span>'
+          : '<span class="badge bg-secondary"><i class="fa-solid fa-building me-1"></i>Kantor (Siang Bebas)</span>'}
+      </td>
+      <td>
         <span class="badge bg-success">M: ${u.summary.masuk}</span>
         <span class="badge bg-warning text-dark">I: ${u.summary.izin}</span>
         <span class="badge bg-danger">S: ${u.summary.sakit}</span>
       </td>
       <td><span class="badge bg-success">AKTIF</span></td>
       <td class="text-center">
-        <button class="btn btn-sm btn-outline-primary" onclick="openModalEditUser('${u.username}', '${u.nama}', '${u.asalSekolah}', '${u.tglMulai}', '${u.tglSelesai}')">
+        <button class="btn btn-sm btn-outline-primary" onclick="openModalEditUser('${u.username}', '${u.nama}', '${u.asalSekolah}', '${u.tglMulai}', '${u.tglSelesai}', ${Boolean(u.bebasLokasi)})">
           <i class="fa-solid fa-edit"></i> Edit
         </button>
       </td>
@@ -608,24 +614,28 @@ async function loadAdminDashboard() {
   `).join('');
 }
 
-function openModalEditUser(username, nama, asalSekolah, tglMulai, tglSelesai) {
+function openModalEditUser(username, nama, asalSekolah, tglMulai, tglSelesai, bebasLokasi = false) {
   document.getElementById('edit-user-username').value = username;
   document.getElementById('edit-user-nama').value = nama;
   document.getElementById('edit-user-sekolah').value = asalSekolah !== 'null' ? asalSekolah : '';
   document.getElementById('edit-user-mulai').value = tglMulai;
   document.getElementById('edit-user-selesai').value = tglSelesai;
+  const bebasEl = document.getElementById('edit-user-bebas-lokasi');
+  if (bebasEl) bebasEl.value = bebasLokasi ? 'true' : 'false';
 
   const modal = new bootstrap.Modal(document.getElementById('modalEditUser'));
   modal.show();
 }
 
 async function saveEditUser() {
+  const bebasEl = document.getElementById('edit-user-bebas-lokasi');
   const payload = {
     username: document.getElementById('edit-user-username').value,
     nama: document.getElementById('edit-user-nama').value,
     asalSekolah: document.getElementById('edit-user-sekolah').value,
     tglMulai: document.getElementById('edit-user-mulai').value,
-    tglSelesai: document.getElementById('edit-user-selesai').value
+    tglSelesai: document.getElementById('edit-user-selesai').value,
+    bebasLokasi: bebasEl ? (bebasEl.value === 'true') : false
   };
 
   showLoading('Menyimpan perubahan user...');
@@ -713,9 +723,13 @@ async function handleGenerateRandomSchedule() {
   if (!users.length) return showToast("Pilih minimal satu user!");
   if (quotaPagi <= 0 && quotaSiang <= 0) return showToast("Masukkan kuota minimal untuk salah satu shift!");
 
+  const offDays = Array.from(document.querySelectorAll('.gen-off-day:checked')).map(el => Number(el.value));
+  const rawOffDates = (document.getElementById('gen-off-dates')?.value || '').trim();
+  const offDates = rawOffDates ? rawOffDates.split(',').map(s => s.trim()).filter(Boolean) : [];
+
   showLoading('Membagi jadwal shift berdasarkan kuota harian...');
   const res = await callAppsScript('generateRandomSchedule', { 
-    payload: { startDate, endDate, users, jenisPKL, quotaPagi, quotaSiang } 
+    payload: { startDate, endDate, users, jenisPKL, quotaPagi, quotaSiang, offDays, offDates } 
   });
   hideLoading();
 
@@ -1065,6 +1079,9 @@ async function refreshAdminCurrentTab(force = false) {
     case '#tab-rekap':
       await loadAdminDashboard();
       break;
+    case '#tab-belum-absen':
+      await loadUnattendedUsers();
+      break;
     case '#tab-jadwal':
       await loadAdminDashboard();
       loadJadwalSection();
@@ -1094,3 +1111,166 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+let cachedUnattendedUsers = [];
+let lastUnattendedMeta = { tanggal: '', tanggalFormatted: '' };
+
+function getLocalTodayISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+async function loadUnattendedUsers() {
+  const dateInput = document.getElementById('filter-unattended-date');
+  const shiftInput = document.getElementById('filter-unattended-shift');
+  const tbody = document.getElementById('table-belum-absen-body');
+
+  if (dateInput && !dateInput.value) {
+    dateInput.value = getLocalTodayISO();
+  }
+
+  const tanggal = dateInput ? dateInput.value : getLocalTodayISO();
+  const shift = shiftInput ? shiftInput.value : '';
+
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Mengecek peserta yang belum absen...</td></tr>';
+  }
+
+  try {
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'getUnattendedUsers',
+        tanggal,
+        shift
+      })
+    });
+    const res = await response.json();
+
+    if (!res.success) {
+      showToast(res.message || 'Gagal memuat data belum absen.', 'error');
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">${res.message || 'Gagal memuat data.'}</td></tr>`;
+      }
+      return;
+    }
+
+    cachedUnattendedUsers = Array.isArray(res.data) ? res.data : [];
+    lastUnattendedMeta = {
+      tanggal: res.tanggal || tanggal,
+      tanggalFormatted: res.tanggalFormatted || tanggal
+    };
+
+    const countEl = document.getElementById('unattended-total-count');
+    const badgeEl = document.getElementById('badge-belum-absen');
+    const subtitleEl = document.getElementById('unattended-subtitle');
+
+    if (countEl) countEl.textContent = cachedUnattendedUsers.length;
+    if (badgeEl) {
+      badgeEl.textContent = cachedUnattendedUsers.length;
+      badgeEl.classList.toggle('d-none', cachedUnattendedUsers.length === 0);
+    }
+    if (subtitleEl) {
+      subtitleEl.textContent = `Tanggal: ${lastUnattendedMeta.tanggalFormatted} • Terjadwal: ${res.totalTerjadwal || 0} peserta • Belum Absen: ${cachedUnattendedUsers.length} peserta`;
+    }
+
+    renderUnattendedTable();
+  } catch (err) {
+    showToast('Koneksi gagal saat mengecek data belum absen.', 'error');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">Terjadi kesalahan koneksi ke server.</td></tr>';
+    }
+  }
+}
+
+function renderUnattendedTable() {
+  const tbody = document.getElementById('table-belum-absen-body');
+  if (!tbody) return;
+
+  const keyword = (document.getElementById('search-unattended')?.value || '').trim().toLowerCase();
+  const filtered = cachedUnattendedUsers.filter(item => {
+    if (!keyword) return true;
+    return (
+      String(item.nama || '').toLowerCase().includes(keyword) ||
+      String(item.username || '').toLowerCase().includes(keyword) ||
+      String(item.asalSekolah || '').toLowerCase().includes(keyword)
+    );
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-success fw-semibold py-4"><i class="fa-solid fa-circle-check me-1"></i> Semua peserta terjadwal sudah absen / tercatat izin pada filter ini.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((u, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td>
+        <div class="fw-bold text-dark">${u.nama}</div>
+        <small class="text-muted">@${u.username}</small>
+      </td>
+      <td>${u.asalSekolah || '-'}</td>
+      <td><span class="badge ${u.shift === 'SIANG' ? 'bg-info text-dark' : 'bg-primary'}">${u.shift}</span></td>
+      <td class="fw-semibold">${u.jamMasukJadwal || '-'}</td>
+      <td>${u.catatanJadwal || '-'}</td>
+      <td><span class="badge bg-warning text-dark">BELUM ABSEN</span></td>
+    </tr>
+  `).join('');
+}
+
+function copyUnattendedList() {
+  if (!cachedUnattendedUsers.length) {
+    showToast('Tidak ada daftar peserta belum absen untuk disalin.', 'info');
+    return;
+  }
+
+  const lines = [
+    `*DAFTAR PESERTA BELUM ABSEN*`,
+    `Tanggal: ${lastUnattendedMeta.tanggalFormatted || lastUnattendedMeta.tanggal}`,
+    `Total: ${cachedUnattendedUsers.length} orang`,
+    ``,
+    ...cachedUnattendedUsers.map((u, i) => `${i + 1}. ${u.nama} (@${u.username}) - Shift ${u.shift} (${u.asalSekolah})`)
+  ];
+
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(() => showToast('Daftar belum absen berhasil disalin ke clipboard!', 'success'))
+    .catch(() => showToast('Gagal menyalin daftar ke clipboard.', 'error'));
+}
+
+function exportUnattendedExcel() {
+  if (!cachedUnattendedUsers.length) {
+    showToast('Tidak ada data belum absen untuk diexport.', 'info');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    showToast('Library Excel belum termuat.', 'error');
+    return;
+  }
+
+  const rows = cachedUnattendedUsers.map((u, i) => ({
+    No: i + 1,
+    Tanggal: lastUnattendedMeta.tanggal,
+    Username: u.username,
+    Nama: u.nama,
+    Asal_Sekolah: u.asalSekolah,
+    Shift: u.shift,
+    Jam_Masuk_Jadwal: u.jamMasukJadwal,
+    Catatan_Jadwal: u.catatanJadwal,
+    Status: 'BELUM ABSEN'
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Belum_Absen');
+  XLSX.writeFile(wb, `Belum_Absen_${lastUnattendedMeta.tanggal || getLocalTodayISO()}.xlsx`);
+  showToast('File Excel daftar belum absen berhasil diunduh.', 'success');
+}
+function toggleCustomOffDays() {
+  const val = document.getElementById('gen-jenis-pkl')?.value;
+  const wrap = document.getElementById('wrapper-custom-off-days');
+  if (wrap) {
+    wrap.classList.toggle('d-none', val !== 'CUSTOM');
+  }
+}
