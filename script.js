@@ -23,7 +23,7 @@ function showToast(message, type = 'info', duration = 4200) {
   window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, duration);
 }
 
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz_4IioV7ODLyKe3P0NektIcLh7jz9K_5-sBKCiUSUJc71cYeiwK4zqJr08hLhHx1pxpQ/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxQhzjxN1xAXOaDTgfJ2uQbtAbbyKwrCNMssdetxcOeP1-nB4z5fKr3BzrxM27WaeroFg/exec";
 
 let currentUser = null;
 let targetLocation = null;
