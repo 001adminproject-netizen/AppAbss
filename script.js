@@ -45,7 +45,7 @@ function showToast(message, type = 'info', duration = 4200) {
   window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, duration);
 }
 
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwUYwcpTB6zH0vOF-BCaOiikuuPHsGhIlFXM-M_3OMlb3k_-lsq_4WVqVHSBX6jBNfaGA/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwp8gZYLXN-am2xebNhvxA5WcBVpWAEWu5HCep2FTJJ1eThqChQLdpnw7qfvnMj8R7WCw/exec";
 
 let currentUser = null;
 let targetLocation = null;
