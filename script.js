@@ -45,7 +45,7 @@ function showToast(message, type = 'info', duration = 4200) {
   window.setTimeout(() => { if (toast.isConnected) toast.remove(); }, duration);
 }
 
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwp8gZYLXN-am2xebNhvxA5WcBVpWAEWu5HCep2FTJJ1eThqChQLdpnw7qfvnMj8R7WCw/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby2uJ6wue3ksZONfNnJrfyEJlFCfUG8Yw9o8Wz7e2Tm55sD48_uX4Bdglq-ffiJKadRBQ/exec";
 
 let currentUser = null;
 let targetLocation = null;
@@ -77,51 +77,130 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 
-async function loadAdminHolidayCalendar() {
-  const body = document.getElementById('admin-holiday-calendar-body');
-  if (!body) return;
-  body.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Memuat kalender...</td></tr>';
-  const res = await callAppsScript('getHolidayCalendar');
-  if (!res || !res.success || !Array.isArray(res.data)) {
-    body.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat kalender libur.</td></tr>';
-    return;
-  }
-  ADMIN_HOLIDAY_ROWS = res.data.slice().sort((a,b) => a.date.localeCompare(b.date));
-  const yearSelect = document.getElementById('admin-holiday-year');
-  if (yearSelect) {
-    const old = yearSelect.value;
-    const years = [...new Set(ADMIN_HOLIDAY_ROWS.map(r => String(r.date).slice(0,4)))].sort();
-    yearSelect.innerHTML = '<option value="">Semua Tahun</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-    if (years.includes(old)) yearSelect.value = old;
-  }
-  const status = document.getElementById('admin-holiday-calendar-status');
-  if (status) status.textContent = `${ADMIN_HOLIDAY_ROWS.length} tanggal terdaftar di kalender.`;
+let ADMIN_HOLIDAY_VIEW_YEAR = new Date().getFullYear();
+let ADMIN_HOLIDAY_VIEW_MONTH = new Date().getMonth();
+let ADMIN_HOLIDAY_SELECTED_DATE = '';
+
+function adminHolidayDateKey(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function loadAdminHolidayCalendar() {
+  return (async () => {
+    const grid = document.getElementById('admin-holiday-calendar-grid');
+    if (!grid) return;
+    grid.innerHTML = '<div class="text-center text-muted py-4">Memuat kalender...</div>';
+    const res = await callAppsScript('getHolidayCalendar');
+    if (!res || !res.success || !Array.isArray(res.data)) {
+      grid.innerHTML = '<div class="text-center text-danger py-4">Gagal memuat kalender libur.</div>';
+      return;
+    }
+    ADMIN_HOLIDAY_ROWS = res.data.slice().sort((a,b) => a.date.localeCompare(b.date));
+    const today = new Date();
+    if (!ADMIN_HOLIDAY_ROWS.some(r => r.date === ADMIN_HOLIDAY_SELECTED_DATE)) {
+      ADMIN_HOLIDAY_SELECTED_DATE = '';
+    }
+    ADMIN_HOLIDAY_VIEW_YEAR = ADMIN_HOLIDAY_VIEW_YEAR || today.getFullYear();
+    const status = document.getElementById('admin-holiday-calendar-status');
+    if (status) status.textContent = `${ADMIN_HOLIDAY_ROWS.length} tanggal terdaftar di kalender.`;
+    renderAdminHolidayCalendarTable();
+  })();
+}
+
+function changeAdminHolidayMonth(delta) {
+  const d = new Date(ADMIN_HOLIDAY_VIEW_YEAR, ADMIN_HOLIDAY_VIEW_MONTH + delta, 1);
+  ADMIN_HOLIDAY_VIEW_YEAR = d.getFullYear();
+  ADMIN_HOLIDAY_VIEW_MONTH = d.getMonth();
+  ADMIN_HOLIDAY_SELECTED_DATE = '';
+  renderAdminHolidayCalendarTable();
+}
+
+function goAdminHolidayToday() {
+  const d = new Date();
+  ADMIN_HOLIDAY_VIEW_YEAR = d.getFullYear();
+  ADMIN_HOLIDAY_VIEW_MONTH = d.getMonth();
+  ADMIN_HOLIDAY_SELECTED_DATE = '';
+  renderAdminHolidayCalendarTable();
+}
+
+function selectAdminHolidayDate(date) {
+  ADMIN_HOLIDAY_SELECTED_DATE = date;
   renderAdminHolidayCalendarTable();
 }
 
 function renderAdminHolidayCalendarTable() {
-  const body = document.getElementById('admin-holiday-calendar-body');
-  if (!body) return;
-  const year = document.getElementById('admin-holiday-year')?.value || '';
-  const rows = ADMIN_HOLIDAY_ROWS.filter(r => !year || String(r.date).startsWith(year));
-  if (!rows.length) { body.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada data kalender.</td></tr>'; return; }
-  body.innerHTML = rows.map((r, i) => `<tr>
-    <td>${i+1}</td><td class="text-nowrap">${formatIndonesianDate(r.date)}</td><td>${escapeHtml(r.name || '-')}</td>
-    <td><span class="badge ${String(r.type).toLowerCase().includes('nasional') ? 'bg-danger' : 'bg-warning text-dark'}">${escapeHtml(r.type || '-')}</span></td>
-    <td><select class="form-select form-select-sm" id="holiday-policy-${String(r.date).replace(/[^0-9]/g,'')}" style="min-width:170px">
-      <option value="true" ${r.isHoliday ? 'selected' : ''}>Libur — absensi tidak wajib</option>
-      <option value="false" ${!r.isHoliday ? 'selected' : ''}>Hari kerja — absensi normal</option>
-    </select></td>
-    <td>Kalender otomatis</td>
-    <td><button type="button" class="btn btn-sm btn-primary" onclick="saveAdminHolidayPolicy('${String(r.date)}')"><i class="fa-solid fa-floppy-disk me-1"></i> Simpan</button></td>
-  </tr>`).join('');
+  const grid = document.getElementById('admin-holiday-calendar-grid');
+  if (!grid) return;
+  const year = ADMIN_HOLIDAY_VIEW_YEAR;
+  const month = ADMIN_HOLIDAY_VIEW_MONTH;
+  const monthLabel = document.getElementById('admin-holiday-month-label');
+  if (monthLabel) monthLabel.textContent = new Date(year, month, 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const holidayByDate = new Map(ADMIN_HOLIDAY_ROWS.map(r => [r.date, r]));
+  const today = new Date();
+  const todayKey = adminHolidayDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push('<span class="admin-holiday-empty" aria-hidden="true"></span>');
+  for (let day = 1; day <= daysInMonth; day++) {
+    const key = adminHolidayDateKey(year, month, day);
+    const row = holidayByDate.get(key);
+    const dow = new Date(year, month, day).getDay();
+    const classes = ['admin-holiday-day'];
+    if (dow === 0 || dow === 6) classes.push('is-weekend');
+    if (row && row.isHoliday) classes.push('is-holiday');
+    if (key === todayKey) classes.push('is-today');
+    if (key === ADMIN_HOLIDAY_SELECTED_DATE) classes.push('is-selected');
+    const title = row ? `${row.name || 'Hari libur'} — ${row.type || 'Kalender'}` : key;
+    cells.push(`<button type="button" class="${classes.join(' ')}" data-date="${key}" title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}" aria-pressed="${key === ADMIN_HOLIDAY_SELECTED_DATE}"><span>${day}</span>${row ? '<i></i>' : ''}</button>`);
+  }
+  grid.innerHTML = cells.join('');
+  grid.querySelectorAll('button[data-date]').forEach(btn => btn.addEventListener('click', () => selectAdminHolidayDate(btn.dataset.date)));
+  renderAdminHolidaySelectedDetail(holidayByDate.get(ADMIN_HOLIDAY_SELECTED_DATE));
+}
+
+function renderAdminHolidaySelectedDetail(row) {
+  const dateLabel = document.getElementById('admin-holiday-selected-date');
+  const detail = document.getElementById('admin-holiday-selected-detail');
+  const policy = document.getElementById('admin-holiday-policy-selected');
+  const save = document.getElementById('admin-holiday-save-selected');
+  const date = ADMIN_HOLIDAY_SELECTED_DATE;
+  if (!date) {
+    if (dateLabel) dateLabel.textContent = 'Pilih tanggal pada kalender';
+    if (detail) detail.textContent = 'Tanggal yang memiliki data libur akan menampilkan nama dan jenis hari libur di sini.';
+    if (policy) policy.disabled = true;
+    if (save) save.disabled = true;
+    return;
+  }
+  if (dateLabel) dateLabel.textContent = formatIndonesianDate(date);
+  if (!row) {
+    if (detail) detail.innerHTML = '<span class="text-muted">Tidak ada data hari libur terdaftar pada tanggal ini.</span>';
+    if (policy) policy.disabled = true;
+    if (save) save.disabled = true;
+    return;
+  }
+  if (detail) detail.innerHTML = `<div class="fw-semibold text-dark mb-1">${escapeHtml(row.name || 'Hari libur')}</div><span class="badge ${String(row.type).toLowerCase().includes('nasional') ? 'bg-danger' : 'bg-warning text-dark'}">${escapeHtml(row.type || 'Kalender otomatis')}</span><div class="mt-2 text-muted">Sumber: Kalender otomatis</div>`;
+  if (policy) {
+    policy.disabled = false;
+    policy.value = row.isHoliday ? 'true' : 'false';
+  }
+  if (save) save.disabled = false;
+}
+
+function saveSelectedAdminHolidayPolicy() {
+  if (!ADMIN_HOLIDAY_SELECTED_DATE) return;
+  saveAdminHolidayPolicy(ADMIN_HOLIDAY_SELECTED_DATE, 'admin-holiday-policy-selected');
 }
 window.loadAdminHolidayCalendar = loadAdminHolidayCalendar;
 window.renderAdminHolidayCalendarTable = renderAdminHolidayCalendarTable;
+window.changeAdminHolidayMonth = changeAdminHolidayMonth;
+window.goAdminHolidayToday = goAdminHolidayToday;
+window.saveSelectedAdminHolidayPolicy = saveSelectedAdminHolidayPolicy;
 
-async function saveAdminHolidayPolicy(date) {
+async function saveAdminHolidayPolicy(date, controlId) {
   if (!currentUser || currentUser.role !== 'admin') return showToast('Akses hanya untuk admin.', 'error');
-  const id = 'holiday-policy-' + String(date).replace(/[^0-9]/g, '');
+  const id = controlId || ('holiday-policy-' + String(date).replace(/[^0-9]/g, ''));
   const select = document.getElementById(id);
   if (!select) return showToast('Kontrol perlakuan absensi tidak ditemukan.', 'error');
   showLoading('Menyimpan perlakuan absensi...');
@@ -215,6 +294,7 @@ function refreshCurrentPageData(page) {
     case 'home':
       loadTodayAttendance();
       loadUserDashboardSummary();
+      loadMyRecap();
       break;
     case 'absen':
       loadTodayAttendance();
@@ -226,6 +306,7 @@ function refreshCurrentPageData(page) {
       loadMyJadwalLibur();
       break;
     case 'riwayat':
+      loadMyRecap();
       loadMyAttendanceHistory();
       break;
     case 'profil':
@@ -363,7 +444,7 @@ function renderUserProfile() {
 
 const TIPE_KERJA_UI = {
   STAY_OFFICE:   { label: 'Stay Office',   modes: ['PAGI'] },
-  SHIFT_WORK:    { label: 'Shift Work',    modes: ['PAGI', 'SIANG', 'WFH_PAGI', 'WFH_SIANG'] },
+  SHIFT_WORK:    { label: 'Shift Work',    modes: ['PAGI', 'SIANG'] },
   FLEXIBEL_WORK: { label: 'Flexibel Work', modes: ['PAGI'] }
 };
 const MODE_UI = {
@@ -397,7 +478,8 @@ function setupAbsenModeOptions() {
   const isNationalHoliday = ABSENSI_HOLIDAYS.includes(key);
   let modes = [...TIPE_KERJA_UI[tipe].modes];
 
-  // Shift Work pada Sabtu, Minggu, dan tanggal merah hanya boleh WFH.
+  // Shift Work: WFH hanya ditampilkan pada Sabtu, Minggu, dan tanggal merah.
+  // Pada hari kerja biasa, pilihan hanya SHIFT PAGI dan SHIFT SIANG.
   if (tipe === 'SHIFT_WORK' && (day === 0 || day === 6 || isNationalHoliday)) {
     modes = ['WFH_PAGI', 'WFH_SIANG'];
   }
@@ -856,10 +938,10 @@ function showAdminView() {
 async function loadAdminDashboard() {
   const tbody = document.getElementById('table-rekap-body');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Memuat rekapitulasi...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Memuat rekapitulasi...</td></tr>';
   const res = await callAppsScript('getAdminDashboard');
   if (!res || !res.success) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">${(res && res.message) || 'Gagal memuat data.'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">${(res && res.message) || 'Gagal memuat data.'}</td></tr>`;
     return;
   }
   activeUserList = res.data || [];
@@ -905,7 +987,7 @@ function renderActiveSummary() {
     const ongoing=(!u.tglMulai||u.tglMulai==='-'||today>=u.tglMulai)&&(!u.tglSelesai||u.tglSelesai==='-'||today<=u.tglSelesai);
     return (!q||hay.includes(q))&&(!period||(period==='berjalan'?ongoing:!ongoing));
   });
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="text-center text-muted py-3">Tidak ada peserta yang cocok dengan filter.</td></tr>';return;}
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" class="text-center text-muted py-3">Tidak ada peserta yang cocok dengan filter.</td></tr>';return;}
   tbody.innerHTML=rows.map(u=>{
     const s=u.summary||{};
     const ongoing=(!u.tglMulai||u.tglMulai==='-'||today>=u.tglMulai)&&(!u.tglSelesai||u.tglSelesai==='-'||today<=u.tglSelesai);
@@ -1152,55 +1234,244 @@ async function handleDeleteSchedulesByRange() {
   if (res.success) loadAllSchedules();
 }
 
+// ====== PERSENTASE KEHADIRAN USER & LUPA ABSEN ======
+let myRecapCache = null;
+
+async function loadMyRecap() {
+  if (!currentUser) return;
+  const card = document.getElementById('my-recap-card');
+  const res = await callAppsScript('getMyRecap', { username: currentUser.username });
+  if (!res || !res.success || !res.data) {
+    myRecapCache = null;
+    const msg = (res && res.message) || 'Data persentase belum tersedia.';
+    if (card) card.innerHTML = `<div class="text-center text-muted small py-3">${escapeHtml(msg)}</div>`;
+    const home = document.getElementById('home-recap-card'); if (home) home.classList.add('d-none');
+    return;
+  }
+  myRecapCache = res;
+  renderMyRecap(res);
+}
+
+function pctClass(pct, total) {
+  return !total ? 'pct-none' : pct >= 90 ? 'pct-good' : pct >= 75 ? 'pct-mid' : 'pct-low';
+}
+
+function renderMyRecap(res) {
+  const r = res.data;
+  const total = r.hariWajibTotal || 0;
+  const pct = total ? r.persenHadir : null;
+  const cls = pctClass(r.persenHadir, total);
+  const izinSakit = (r.izin || 0) + (r.sakit || 0) + (r.cuti || 0);
+  const pctText = total ? (Number.isInteger(pct) ? pct : pct.toFixed(1)) + '%' : '-';
+
+  const card = document.getElementById('my-recap-card');
+  if (card) {
+    card.innerHTML = `
+      <div class="my-recap-head">
+        <div class="my-recap-ring ${cls}"><span>${pctText}</span><small>Kehadiran</small></div>
+        <div class="my-recap-info">
+          <div class="fw-bold">Persentase Kehadiran</div>
+          <div class="text-muted" style="font-size:.74rem">Turun tiap hari wajib tidak absen, lalu pulih tiap absen lebih awal dari jadwal. Maks 100%.</div>
+          <div class="my-recap-bar"><i class="${cls}" style="width:${total ? Math.max(0, Math.min(100, r.persenHadir)) : 0}%"></i></div>
+        </div>
+      </div>
+      <div class="my-recap-grid">
+        <div><b class="c-hadir">${r.hadir || 0}</b><small>Hadir</small></div>
+        <div><b class="c-izin">${izinSakit}</b><small>Izin/Sakit</small></div>
+        <div><b class="c-telat">${r.telat || 0}</b><small>Telat</small></div>
+        <div><b class="c-awal">${r.absenAwal || 0}</b><small>Absen Awal</small></div>
+        <div><b class="c-alpa">${r.tidakAbsen || 0}</b><small>Tidak Absen</small></div>
+      </div>
+      <div class="riwayat-sub mt-2">${total ? `${r.tidakAbsen || 0} tidak absen dari ${total} hari wajib. Tiap absen lebih awal dari jadwal memulihkan ${res.bonusHari || 1} hari dari hari tidak absen yang sudah terjadi (maks 100%, bonus tidak bisa ditabung).` : 'Belum ada hari wajib yang dihitung.'}</div>`;
+  }
+
+  const home = document.getElementById('home-recap-card');
+  if (home) {
+    home.classList.remove('d-none');
+    const hp = document.getElementById('home-recap-pct');
+    hp.textContent = pctText; hp.className = 'my-recap-mini-pct ' + cls;
+    document.getElementById('home-recap-sub').textContent = r.tidakAbsen ? `${r.tidakAbsen} hari belum absen` : 'Tidak ada hari bolos';
+  }
+
+  // daftar hari belum absen (informasi saja)
+  const box = document.getElementById('my-missed-box');
+  const list = document.getElementById('my-missed-list');
+  const missed = res.missed || [];
+  if (box && list) {
+    if (!missed.length) box.classList.add('d-none');
+    else {
+      box.classList.remove('d-none');
+      list.innerHTML = missed.map(t => `<div class="my-missed-row"><span>${escapeHtml(formatIndonesianDate(t))}</span><span class="badge bg-danger-subtle text-danger-emphasis">Tidak absen</span></div>`).join('');
+    }
+  }
+}
+
+let rawAttendanceRecap = [];
+let attendanceRecapError = '';
+let attendanceRecapTimer = null;
+
 async function loadAllAttendanceDetails() {
   const tbody = document.getElementById('table-detail-all-body');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Memuat riwayat...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">Memuat riwayat...</td></tr>';
+  const recapBody = document.getElementById('table-recap-body');
+  if (recapBody) recapBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Memuat ringkasan...</td></tr>';
 
-  const res = await callAppsScript('getAllAttendanceDetails');
+  const start = document.getElementById('filter-attendance-start')?.value || '';
+  const end = document.getElementById('filter-attendance-end')?.value || '';
+  const [res, recap] = await Promise.all([
+    callAppsScript('getAllAttendanceDetails'),
+    callAppsScript('getAttendanceRecap', { start, end })
+  ]);
   rawAllDetails = res.data || [];
+  if (recap && recap.success) {
+    rawAttendanceRecap = recap.data || [];
+    attendanceRecapError = '';
+  } else {
+    rawAttendanceRecap = [];
+    attendanceRecapError = (recap && recap.message) || 'Gagal memuat ringkasan. Pastikan Code.gs terbaru sudah di-deploy.';
+  }
   applyAttendanceFilters();
 }
 
-function applyAttendanceFilters() {
-  const search = document.getElementById('filter-search-name').value.toLowerCase();
-  const status = document.getElementById('filter-status').value;
-  const start=document.getElementById('filter-attendance-start')?.value||'';
-  const end=document.getElementById('filter-attendance-end')?.value||'';
+function onAttendanceRangeChange() {
+  applyAttendanceFilters();
+  clearTimeout(attendanceRecapTimer);
+  attendanceRecapTimer = setTimeout(loadAllAttendanceDetails, 350);
+}
 
-  const filtered = rawAllDetails.filter(r => {
-    const matchSearch = r.nama.toLowerCase().includes(search) || r.username.toLowerCase().includes(search);
+function resetAttendanceFilters() {
+  ['filter-search-name', 'filter-attendance-start', 'filter-attendance-end', 'filter-status'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  loadAllAttendanceDetails();
+}
+
+function getFilteredAttendanceRows() {
+  const search = (document.getElementById('filter-search-name')?.value || '').toLowerCase();
+  const status = document.getElementById('filter-status')?.value || '';
+  const start = document.getElementById('filter-attendance-start')?.value || '';
+  const end = document.getElementById('filter-attendance-end')?.value || '';
+  return rawAllDetails.filter(r => {
+    const matchSearch = !search || String(r.nama || '').toLowerCase().includes(search) || String(r.username || '').toLowerCase().includes(search);
     const matchStatus = status === '' || r.status === status || (status === 'HADIR' && (r.status === 'MASUK' || r.status === 'HADIR'));
-    const date=String(r.tanggal||'').slice(0,10);
-    const matchDate=(!start||date>=start)&&(!end||date<=end);
+    const date = String(r.tanggal || '').slice(0, 10);
+    const matchDate = (!start || date >= start) && (!end || date <= end);
     return matchSearch && matchStatus && matchDate;
   });
+}
 
-  const tbody = document.getElementById('table-detail-all-body');
-  if (!tbody) return;
+function getFilteredAttendanceRecap() {
+  const search = (document.getElementById('filter-search-name')?.value || '').toLowerCase();
+  return rawAttendanceRecap.filter(r => !search || String(r.nama || '').toLowerCase().includes(search) || String(r.username || '').toLowerCase().includes(search));
+}
 
-  if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Tidak ditemukan data.</td></tr>';
-    return;
+function sumAttendanceRecap(rows) {
+  return rows.reduce((t, r) => {
+    t.hadir += r.hadir || 0;
+    t.izinSakit += (r.izin || 0) + (r.sakit || 0) + (r.cuti || 0);
+    t.telat += r.telat || 0;
+    t.absenAwal += r.absenAwal || 0;
+    t.tidakAbsen += r.tidakAbsen || 0;
+    t.hariWajib += r.hariWajibTotal || 0;
+    return t;
+  }, { hadir: 0, izinSakit: 0, telat: 0, absenAwal: 0, tidakAbsen: 0, hariWajib: 0 });
+}
+
+function attendanceStatusBadge(status) {
+  const st = String(status || '-').toUpperCase();
+  const cls = (st === 'HADIR' || st === 'MASUK') ? 'bg-success' : st === 'IZIN' ? 'bg-warning text-dark' : st === 'SAKIT' ? 'bg-info text-dark' : st === 'CUTI' ? 'bg-secondary' : 'bg-light text-dark border';
+  return `<span class="badge ${cls}">${escapeHtml(st)}</span>`;
+}
+
+function attendanceRangeLabel() {
+  const start = document.getElementById('filter-attendance-start')?.value || '';
+  const end = document.getElementById('filter-attendance-end')?.value || '';
+  if (!start && !end) return 'Semua periode';
+  return `Periode: ${start ? formatIndonesianDate(start) : 'awal'} s/d ${end ? formatIndonesianDate(end) : 'sekarang'}`;
+}
+
+function applyAttendanceFilters() {
+  const rows = getFilteredAttendanceRows();
+  const recap = getFilteredAttendanceRecap();
+  const tot = sumAttendanceRecap(recap);
+
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('sum-hadir', tot.hadir);
+  setText('sum-izin', tot.izinSakit);
+  setText('sum-telat', tot.telat);
+  setText('sum-alpa', tot.tidakAbsen);
+  setText('detail-count', rows.length);
+  setText('riwayat-period-label', attendanceRangeLabel());
+
+  // ringkasan per peserta
+  const recapBody = document.getElementById('table-recap-body');
+  const recapFoot = document.getElementById('table-recap-foot');
+  if (recapBody) {
+    if (attendanceRecapError) {
+      recapBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">${escapeHtml(attendanceRecapError)}</td></tr>`;
+      if (recapFoot) recapFoot.innerHTML = '';
+    } else if (!recap.length) {
+      recapBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Tidak ada peserta.</td></tr>';
+      if (recapFoot) recapFoot.innerHTML = '';
+    } else {
+      recapBody.innerHTML = recap.map((r, i) => {
+        const izinSakit = (r.izin || 0) + (r.sakit || 0) + (r.cuti || 0);
+        const detail = [r.izin ? `Izin ${r.izin}` : '', r.sakit ? `Sakit ${r.sakit}` : '', r.cuti ? `Cuti ${r.cuti}` : ''].filter(Boolean).join(' • ');
+        const pct = r.persenHadir || 0;
+        const pctCls = !r.hariWajibTotal ? 'pct-none' : pct >= 90 ? 'pct-good' : pct >= 75 ? 'pct-mid' : 'pct-low';
+        const pctSub = r.hariWajibTotal
+          ? `${r.tidakAbsen || 0} tidak absen${r.absenAwal ? ', +' + r.absenAwal + ' absen awal' : ''} dari ${r.hariWajibTotal} hari wajib`
+          : (r.hariDikecualikan ? `${r.hariDikecualikan} hari libur/izin` : 'belum ada hari wajib');
+        return `<tr>
+          <td class="text-center text-muted">${i + 1}</td>
+          <td><b>${escapeHtml(r.nama)}</b><div class="riwayat-sub">${escapeHtml(r.asalSekolah || '-')}</div></td>
+          <td class="text-center"><span class="num-pill pill-hadir">${r.hadir || 0}</span></td>
+          <td class="text-center"><span class="num-pill pill-izin">${izinSakit}</span>${detail ? `<div class="riwayat-sub">${escapeHtml(detail)}</div>` : ''}</td>
+          <td class="text-center"><span class="num-pill pill-telat">${r.telat || 0}</span>${r.totalTelatMenit ? `<div class="riwayat-sub">${r.totalTelatMenit} menit</div>` : ''}</td>
+          <td class="text-center"><span class="num-pill pill-awal">${r.absenAwal || 0}</span></td>
+          <td class="text-center"><span class="num-pill pill-alpa">${r.tidakAbsen || 0}</span></td>
+          <td class="text-center"><span class="pct-badge ${pctCls}">${r.hariWajibTotal ? pct + '%' : '-'}</span><div class="riwayat-sub">${pctSub}</div></td>
+        </tr>`;
+      }).join('');
+      if (recapFoot) recapFoot.innerHTML = `<tr>
+        <td></td><td>TOTAL</td>
+        <td class="text-center">${tot.hadir}</td><td class="text-center">${tot.izinSakit}</td>
+        <td class="text-center">${tot.telat}</td><td class="text-center">${tot.absenAwal}</td><td class="text-center">${tot.tidakAbsen}</td><td></td></tr>`;
+    }
   }
 
-  tbody.innerHTML = filtered.map(r => `
-    <tr>
-      <td><small class="fw-bold text-dark">${formatIndonesianDate(r.tanggal)}</small></td>
-      <td><b>${r.nama}</b></td>
-      <td>${r.jamMasuk}</td>
-      <td>${r.jamPulang}</td>
-      <td><span class="badge bg-success">${r.status}</span></td>
-      <td><small>${r.keterlambatan}</small></td>
-      <td><small>${r.kegiatan || '-'}</small></td>
-      <td><small>${r.alasan || '-'}</small></td>
+  // detail
+  const tbody = document.getElementById('table-detail-all-body');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">Tidak ditemukan data.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const late = String(r.keterlambatan || '-');
+    const lateHtml = /telat/i.test(late) ? `<span class="badge bg-danger-subtle text-danger-emphasis">${escapeHtml(late)}</span>` : `<small class="text-muted">${escapeHtml(late)}</small>`;
+    return `<tr>
+      <td class="text-center text-muted">${i + 1}</td>
+      <td class="text-nowrap"><small class="fw-bold">${escapeHtml(formatIndonesianDate(r.tanggal))}</small></td>
+      <td><b>${escapeHtml(r.nama)}</b></td>
+      <td class="text-center">${escapeHtml(r.jamMasuk)}</td>
+      <td class="text-center">${escapeHtml(r.jamPulang)}</td>
+      <td class="text-center">${attendanceStatusBadge(r.status)}</td>
+      <td class="text-center">${lateHtml}</td>
+      <td><small>${escapeHtml(r.kegiatan || '-')}</small></td>
+      <td><small>${escapeHtml(r.alasan || '-')}</small></td>
       <td class="no-print text-center">
-        <button class="btn btn-xs btn-outline-primary" onclick="openModalEditAttendance(${r.rowIndex}, '${r.jamMasuk}', '${r.jamPulang}', '${r.status}', \`${r.kegiatan || ''}\`, \`${r.alasan || ''}\`)">
-          <i class="fa-solid fa-edit"></i>
-        </button>
+        <button class="btn btn-sm btn-outline-primary py-0 px-2" title="Edit" onclick="openEditAttendanceByRow(${Number(r.rowIndex)})"><i class="fa-solid fa-edit"></i></button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
+}
+
+function openEditAttendanceByRow(rowIndex) {
+  const r = rawAllDetails.find(x => Number(x.rowIndex) === Number(rowIndex));
+  if (!r) return showToast('Data tidak ditemukan.');
+  openModalEditAttendance(r.rowIndex, r.jamMasuk, r.jamPulang, r.status, r.kegiatan || '', r.alasan || '');
 }
 
 function openModalEditAttendance(rowIndex, masuk, pulang, status, kegiatan, alasan) {
@@ -1237,11 +1508,31 @@ async function saveEditAttendance() {
 }
 
 function exportToExcel() {
-  if (!rawAllDetails || !rawAllDetails.length) return showToast("Tidak ada data untuk diexport!");
+  if ((!rawAllDetails || !rawAllDetails.length) && (!rawAttendanceRecap || !rawAttendanceRecap.length)) return showToast("Tidak ada data untuk diexport!");
 
-  const search=(document.getElementById('filter-search-name')?.value||'').toLowerCase();const status=document.getElementById('filter-status')?.value||'';const start=document.getElementById('filter-attendance-start')?.value||'';const end=document.getElementById('filter-attendance-end')?.value||'';
-  const exportRows=rawAllDetails.filter(r=>{const nm=String(r.nama||'').toLowerCase(),un=String(r.username||'').toLowerCase(),dt=String(r.tanggal||'').slice(0,10);const ms=!status||r.status===status||(status==='HADIR'&&(r.status==='MASUK'||r.status==='HADIR'));return (!search||nm.includes(search)||un.includes(search))&&ms&&(!start||dt>=start)&&(!end||dt<=end);});
-  const dataToExport = exportRows.map(r => ({
+  const exportRows = getFilteredAttendanceRows();
+  const recap = getFilteredAttendanceRecap();
+  const tot = sumAttendanceRecap(recap);
+
+  // Sheet 1: Ringkasan per peserta
+  const ringkas = [['REKAP RIWAYAT ABSENSI PKL'], [attendanceRangeLabel()], [],
+    ['No', 'Nama Lengkap', 'Username', 'Asal Sekolah', 'Hadir', 'Izin', 'Sakit', 'Cuti', 'Izin/Sakit', 'Telat (x)', 'Total Telat (menit)', 'Absen Awal (x)', 'Tidak Absen', 'Total Hari Wajib', 'Kehadiran (%)']];
+  recap.forEach((r, i) => ringkas.push([
+    i + 1, r.nama, r.username, r.asalSekolah || '-', r.hadir || 0, r.izin || 0, r.sakit || 0, r.cuti || 0,
+    (r.izin || 0) + (r.sakit || 0) + (r.cuti || 0), r.telat || 0, r.totalTelatMenit || 0, r.absenAwal || 0, r.tidakAbsen || 0,
+    r.hariWajibTotal || 0, r.hariWajibTotal ? r.persenHadir : (r.hariDikecualikan ? 'Semua hari libur/izin' : 'Belum ada hari wajib')
+  ]));
+  ringkas.push(['', 'TOTAL', '', '', tot.hadir, recap.reduce((a, r) => a + (r.izin || 0), 0), recap.reduce((a, r) => a + (r.sakit || 0), 0),
+    recap.reduce((a, r) => a + (r.cuti || 0), 0), tot.izinSakit, tot.telat, recap.reduce((a, r) => a + (r.totalTelatMenit || 0), 0), tot.absenAwal, tot.tidakAbsen, tot.hariWajib, '']);
+  ringkas.push([]);
+  ringkas.push(['Catatan: Tidak Absen = hari wajib tanpa catatan absensi (bukan tanggal merah, libur pribadi, izin/sakit/cuti). Kehadiran = (total hari wajib - defisit) / total hari wajib, maks 100%; absen awal hanya memulihkan hari tidak absen yang sudah terjadi. Absen Awal = masuk sebelum jam masuk shift, per absen.']);
+  const wsRingkas = XLSX.utils.aoa_to_sheet(ringkas);
+  wsRingkas['!cols'] = [{ wch: 5 }, { wch: 28 }, { wch: 16 }, { wch: 24 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 11 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 11 }, { wch: 14 }];
+  wsRingkas['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 14 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 14 } }];
+
+  // Sheet 2: Detail riwayat
+  const dataToExport = exportRows.map((r, i) => ({
+    "No": i + 1,
     "Tanggal": formatIndonesianDate(r.tanggal),
     "Username": r.username,
     "Nama Lengkap": r.nama,
@@ -1252,10 +1543,12 @@ function exportToExcel() {
     "Laporan Kegiatan": r.kegiatan || "-",
     "Alasan / Keterangan": r.alasan || "-"
   }));
+  const wsDetail = XLSX.utils.json_to_sheet(dataToExport);
+  wsDetail['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 16 }, { wch: 26 }, { wch: 11 }, { wch: 11 }, { wch: 10 }, { wch: 16 }, { wch: 40 }, { wch: 30 }];
 
-  const worksheet = XLSX.utils.json_to_sheet(dataToExport);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Absensi");
+  XLSX.utils.book_append_sheet(workbook, wsRingkas, "Ringkasan Peserta");
+  XLSX.utils.book_append_sheet(workbook, wsDetail, "Riwayat Absensi");
   XLSX.writeFile(workbook, "Riwayat_Absensi_PKL.xlsx");
 }
 
@@ -1499,7 +1792,7 @@ async function loadUnattendedUsers() {
   const shift = shiftInput ? shiftInput.value : '';
 
   if (tbody) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Mengecek peserta yang belum absen...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3"><i class="fa-solid fa-spinner fa-spin me-1"></i> Mengecek peserta yang belum absen...</td></tr>';
   }
 
   try {
@@ -1516,7 +1809,7 @@ async function loadUnattendedUsers() {
     if (!res.success) {
       showToast(res.message || 'Gagal memuat data belum absen.', 'error');
       if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">${res.message || 'Gagal memuat data.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">${res.message || 'Gagal memuat data.'}</td></tr>`;
       }
       return;
     }
@@ -1544,7 +1837,7 @@ async function loadUnattendedUsers() {
   } catch (err) {
     showToast('Koneksi gagal saat mengecek data belum absen.', 'error');
     if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">Terjadi kesalahan koneksi ke server.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-3">Terjadi kesalahan koneksi ke server.</td></tr>';
     }
   }
 }
@@ -1564,7 +1857,7 @@ function renderUnattendedTable() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-success fw-semibold py-4"><i class="fa-solid fa-circle-check me-1"></i> Semua peserta terjadwal sudah absen / tercatat izin pada filter ini.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-success fw-semibold py-4"><i class="fa-solid fa-circle-check me-1"></i> Semua peserta terjadwal sudah absen / tercatat izin pada filter ini.</td></tr>';
     return;
   }
 
