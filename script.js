@@ -1282,7 +1282,7 @@ function renderMyRecap(res) {
         <div><b class="c-awal">${r.absenAwal || 0}</b><small>Absen Awal</small></div>
         <div><b class="c-alpa">${r.tidakAbsen || 0}</b><small>Tidak Absen</small></div>
       </div>
-      <div class="riwayat-sub mt-2">${total ? `${r.tidakAbsen || 0} tidak absen dari ${total} hari wajib. Tiap absen lebih awal dari jadwal memulihkan ${res.bonusHari || 1} hari dari hari tidak absen yang sudah terjadi (maks 100%, bonus tidak bisa ditabung).` : 'Belum ada hari wajib yang dihitung.'}</div>`;
+      <div class="riwayat-sub mt-2">${total ? `${r.tidakAbsen || 0} tidak absen dari ${total} hari wajib. Tiap absen lebih awal dari jadwal memulihkan ${res.bonusHari || 1} hari dari hari tidak absen yang sudah terjadi.` : 'Belum ada hari wajib yang dihitung.'}</div>`;
   }
 
   const home = document.getElementById('home-recap-card');
