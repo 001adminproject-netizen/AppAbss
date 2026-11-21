@@ -197,6 +197,12 @@
             </span>
           </div>
 
+          <div id="home-recap-card" class="my-recap-mini d-none" onclick="switchUserTab('riwayat')" role="button">
+            <div class="my-recap-mini-pct" id="home-recap-pct">-</div>
+            <div class="my-recap-mini-text"><b>Persentase Kehadiran</b><small id="home-recap-sub">Memuat...</small></div>
+            <i class="fa-solid fa-chevron-right"></i>
+          </div>
+
           <div class="quick-access-grid">
             <button type="button" class="quick-access-card quick-access-attendance"
                     onclick="switchUserTab('absen')" aria-label="Buka Absen Selfie">
@@ -428,6 +434,14 @@
             <button class="btn btn-sm btn-light border py-1 px-2" onclick="switchUserTab('home')"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
           </div>
         </div>
+        <div id="my-recap-card" class="my-recap-card mb-3">
+          <div class="text-center text-muted small py-3">Memuat persentase...</div>
+        </div>
+        <div id="my-missed-box" class="my-missed-box mb-3 d-none">
+          <div class="fw-bold small mb-1"><i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i> Hari wajib belum absen</div>
+          <div class="text-muted" style="font-size:.72rem" id="my-missed-hint">Absen lebih awal dari jadwal pada hari wajib untuk memulihkan persentase yang turun.</div>
+          <div id="my-missed-list" class="mt-2"></div>
+        </div>
         <div id="my-attendance-summary" class="small text-muted mb-2"></div>
         <div class="table-responsive rounded-3 border" style="max-height:360px">
           <table class="table table-sm table-striped table-hover align-middle mb-0" style="font-size: 0.8rem;">
@@ -464,7 +478,10 @@
           <div class="profile-info-row"><span><i class="fa-solid fa-calendar-plus me-2"></i>Mulai PKL</span><strong id="profile-mulai">-</strong></div>
           <div class="profile-info-row"><span><i class="fa-solid fa-calendar-check me-2"></i>Selesai PKL</span><strong id="profile-selesai">-</strong></div>
         </div>
-        <button type="button" class="btn btn-outline-danger w-100 mt-4 py-2 fw-bold rounded-3" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-2"></i>Keluar dari Akun</button>
+        <button type="button" class="btn btn-attention w-100 mt-3 py-2 fw-bold rounded-3" data-bs-toggle="modal" data-bs-target="#modalAttention">
+          <i class="fa-solid fa-circle-exclamation me-2"></i>Attention · Panduan Aplikasi
+        </button>
+        <button type="button" class="btn btn-outline-danger w-100 mt-2 py-2 fw-bold rounded-3" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-2"></i>Keluar dari Akun</button>
       </div>
 
     </div>
@@ -665,35 +682,79 @@
       </div>
 
       <div class="tab-pane fade" id="tab-detail-all">
-        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 no-print">
+        <div class="admin-dashboard-intro d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 no-print">
+          <div><span class="admin-eyebrow">RIWAYAT ABSENSI</span><h5 class="fw-bold mb-1">Riwayat All &amp; Ringkasan Kehadiran</h5><p class="text-muted small mb-0">Hadir, izin/sakit, telat, dan tidak absen per peserta. Ikut terunduh ke Excel dan tercetak.</p></div>
           <div class="d-flex gap-2 flex-wrap">
-            <input type="text" id="filter-search-name" class="form-control form-control-sm" placeholder="Cari Nama..." onkeyup="applyAttendanceFilters()">
-            <input type="date" id="filter-attendance-start" class="form-control form-control-sm" title="Tanggal mulai" onchange="applyAttendanceFilters()">
-            <input type="date" id="filter-attendance-end" class="form-control form-control-sm" title="Tanggal selesai" onchange="applyAttendanceFilters()">
-            <select id="filter-status" class="form-select form-select-sm" onchange="applyAttendanceFilters()">
-              <option value="">-- Semua Status --</option>
-              <option value="HADIR">HADIR / MASUK</option>
-              <option value="IZIN">IZIN</option>
-              <option value="SAKIT">SAKIT</option>
-            </select>
-          </div>
-          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary fw-bold" onclick="loadAllAttendanceDetails()"><i class="fa-solid fa-rotate me-1"></i> Perbarui</button>
             <button class="btn btn-sm btn-outline-success fw-bold" onclick="exportToExcel()"><i class="fa-solid fa-file-excel me-1"></i> Download Excel</button>
             <button class="btn btn-sm btn-outline-secondary fw-bold" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> Print / Cetak</button>
           </div>
         </div>
 
+        <div class="riwayat-filter-bar no-print">
+          <div class="riwayat-filter-item riwayat-filter-search">
+            <label for="filter-search-name">Cari peserta</label>
+            <input type="text" id="filter-search-name" class="form-control form-control-sm" placeholder="Nama / username..." onkeyup="applyAttendanceFilters()">
+          </div>
+          <div class="riwayat-filter-item">
+            <label for="filter-attendance-start">Dari tanggal</label>
+            <input type="date" id="filter-attendance-start" class="form-control form-control-sm" onchange="onAttendanceRangeChange()">
+          </div>
+          <div class="riwayat-filter-item">
+            <label for="filter-attendance-end">Sampai tanggal</label>
+            <input type="date" id="filter-attendance-end" class="form-control form-control-sm" onchange="onAttendanceRangeChange()">
+          </div>
+          <div class="riwayat-filter-item">
+            <label for="filter-status">Status</label>
+            <select id="filter-status" class="form-select form-select-sm" onchange="applyAttendanceFilters()">
+              <option value="">Semua Status</option>
+              <option value="HADIR">HADIR / MASUK</option>
+              <option value="IZIN">IZIN</option>
+              <option value="SAKIT">SAKIT</option>
+            </select>
+          </div>
+          <button class="btn btn-sm btn-light border riwayat-filter-reset" onclick="resetAttendanceFilters()"><i class="fa-solid fa-eraser me-1"></i> Reset</button>
+        </div>
+
         <div id="print-section">
-          <div class="table-responsive">
-            <table class="table table-striped align-middle small border" id="table-all-details">
-              <thead class="table-dark">
+          <div class="print-header">
+            <h4>Rekap Riwayat Absensi PKL</h4>
+            <div id="riwayat-period-label" class="print-sub">Semua periode</div>
+          </div>
+
+          <h6 class="riwayat-section-title"><i class="fa-solid fa-users me-1"></i> Ringkasan per Peserta</h6>
+          <div class="table-responsive riwayat-table-wrap">
+            <table class="table align-middle small riwayat-table mb-0" id="table-recap-peserta">
+              <thead>
                 <tr>
+                  <th class="text-center" style="width:44px">No</th>
+                  <th>Nama</th>
+                  <th class="text-center">Hadir</th>
+                  <th class="text-center">Izin/Sakit</th>
+                  <th class="text-center">Telat</th>
+                  <th class="text-center">Absen Awal</th>
+                  <th class="text-center">Tidak Absen</th>
+                  <th class="text-center">Kehadiran</th>
+                </tr>
+              </thead>
+              <tbody id="table-recap-body"><tr><td colspan="8" class="text-center text-muted py-3">Memuat ringkasan...</td></tr></tbody>
+              <tfoot id="table-recap-foot"></tfoot>
+            </table>
+          </div>
+          <div class="riwayat-note">Tidak Absen = hari wajib (tanpa tanggal merah, libur pribadi, izin/sakit/cuti) yang tidak ada catatan absensi. Tidak Absen dihitung sampai kemarin. Kehadiran mulai 100% dan turun setiap hari wajib tidak absen: (total hari wajib periode − tidak absen) ÷ total hari wajib periode. Angka final terlihat di akhir periode.</div>
+
+          <h6 class="riwayat-section-title mt-4"><i class="fa-solid fa-list-check me-1"></i> Detail Riwayat <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" id="detail-count">0</span></h6>
+          <div class="table-responsive riwayat-table-wrap">
+            <table class="table align-middle small riwayat-table mb-0" id="table-all-details">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width:44px">No</th>
                   <th>Tanggal</th>
                   <th>Nama</th>
-                  <th>Masuk</th>
-                  <th>Pulang</th>
-                  <th>Status</th>
-                  <th>Terlambat</th>
+                  <th class="text-center">Masuk</th>
+                  <th class="text-center">Pulang</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Telat</th>
                   <th>Kegiatan</th>
                   <th>Ket</th>
                   <th class="no-print text-center">Aksi</th>
@@ -708,12 +769,40 @@
       <!-- TAB KALENDER HARI LIBUR NASIONAL -->
       <div class="tab-pane fade" id="tab-holiday-calendar">
         <div class="admin-dashboard-intro d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <div><span class="admin-eyebrow">KALENDER OTOMATIS</span><h5 class="fw-bold mb-1">Hari Libur Nasional & Cuti Bersama</h5><p class="text-muted small mb-0">Daftar tanggal dari sinkronisasi kalender. Tanggal nasional tetap dapat dipilih peserta pada Jadwal Libur pribadi.</p></div>
+          <div><span class="admin-eyebrow">KALENDER OTOMATIS</span><h5 class="fw-bold mb-1">Hari Libur Nasional & Cuti Bersama</h5><p class="text-muted small mb-0">Tanggal ditampilkan dalam kalender bulanan. Pilih tanggal untuk melihat nama libur dan mengatur perlakuan absensi.</p></div>
           <div class="d-flex gap-2"><button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadAdminHolidayCalendar()"><i class="fa-solid fa-rotate me-1"></i> Muat Ulang</button><button type="button" class="btn btn-primary btn-sm" onclick="syncHolidayCalendarNow().then(loadAdminHolidayCalendar)"><i class="fa-solid fa-cloud-arrow-down me-1"></i> Sinkronkan</button></div>
         </div>
-        <div class="admin-table-panel">
-          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2"><span class="small text-muted" id="admin-holiday-calendar-status">Memuat kalender...</span><select id="admin-holiday-year" class="form-select form-select-sm" style="max-width:140px" onchange="renderAdminHolidayCalendarTable()"><option value="">Semua Tahun</option></select></div>
-          <div class="table-responsive"><table class="table table-hover align-middle small"><thead class="table-light"><tr><th>No</th><th>Tanggal</th><th>Nama Hari Libur</th><th>Jenis</th><th>Perlakuan Absensi</th><th>Sumber</th><th>Aksi</th></tr></thead><tbody id="admin-holiday-calendar-body"><tr><td colspan="7" class="text-center text-muted">Memuat data...</td></tr></tbody></table></div>
+        <div class="admin-holiday-layout">
+          <section class="admin-table-panel admin-holiday-calendar-panel">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+              <span class="small text-muted" id="admin-holiday-calendar-status">Memuat kalender...</span>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="Bulan sebelumnya" onclick="changeAdminHolidayMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                <strong id="admin-holiday-month-label" class="text-center" style="min-width:150px">-</strong>
+                <button type="button" class="btn btn-outline-secondary btn-sm" aria-label="Bulan berikutnya" onclick="changeAdminHolidayMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="goAdminHolidayToday()">Hari Ini</button>
+              </div>
+            </div>
+            <div class="admin-holiday-weekdays"><span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span></div>
+            <div id="admin-holiday-calendar-grid" class="admin-holiday-grid" aria-label="Kalender hari libur nasional"></div>
+            <div class="d-flex flex-wrap gap-3 small text-muted mt-3">
+              <span><i class="admin-holiday-legend-dot is-holiday"></i> Hari libur</span>
+              <span><i class="admin-holiday-legend-dot is-weekend"></i> Akhir pekan</span>
+              <span><i class="admin-holiday-legend-dot is-today"></i> Hari ini</span>
+            </div>
+          </section>
+          <section class="admin-table-panel admin-holiday-detail-panel">
+            <div class="admin-eyebrow mb-1">DETAIL TANGGAL</div>
+            <h6 id="admin-holiday-selected-date" class="fw-bold mb-2">Pilih tanggal pada kalender</h6>
+            <div id="admin-holiday-selected-detail" class="small text-muted mb-3">Tanggal yang memiliki data libur akan menampilkan nama dan jenis hari libur di sini.</div>
+            <label for="admin-holiday-policy-selected" class="form-label small fw-semibold">Perlakuan absensi</label>
+            <select id="admin-holiday-policy-selected" class="form-select form-select-sm mb-3" disabled>
+              <option value="true">Libur — absensi tidak wajib</option>
+              <option value="false">Hari kerja — absensi normal</option>
+            </select>
+            <button id="admin-holiday-save-selected" type="button" class="btn btn-primary btn-sm w-100" disabled onclick="saveSelectedAdminHolidayPolicy()"><i class="fa-solid fa-floppy-disk me-1"></i> Simpan Perubahan</button>
+            <div class="small text-muted mt-3">Perubahan perlakuan berlaku untuk validasi absensi pada tanggal yang dipilih.</div>
+          </section>
         </div>
       </div>
 
@@ -839,6 +928,226 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
         <button type="button" class="btn btn-primary btn-sm fw-bold" onclick="saveEditAttendance()">Simpan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ATTENTION: PANDUAN APLIKASI -->
+<div class="modal fade" id="modalAttention" tabindex="-1" aria-labelledby="modalAttentionLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content att-modal">
+      <div class="modal-header att-header">
+        <div>
+          <h6 class="modal-title fw-bold mb-0" id="modalAttentionLabel"><i class="fa-solid fa-circle-exclamation me-2"></i>Attention · Panduan Aplikasi</h6>
+          <small class="opacity-75">Cara menggunakan semua fitur HR Absensi</small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="accordion accordion-flush" id="attentionAccordion">
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button " type="button" data-bs-toggle="collapse" data-bs-target="#att-1" aria-expanded="true">
+              <span class="att-icon"><i class="fa-solid fa-circle-info"></i></span>Tentang Aplikasi
+            </button>
+          </h2>
+          <div id="att-1" class="accordion-collapse collapse show" data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<p>Aplikasi <b>HR Absensi PKL</b> dipakai peserta PKL untuk mencatat kehadiran harian secara online memakai <b>foto selfie</b> dan <b>lokasi GPS</b>. Semua data tersimpan otomatis dan dapat dipantau oleh Admin.</p>
+<ul class="mb-0">
+  <li>Absen Masuk &amp; Pulang dengan foto selfie</li>
+  <li>Pengajuan Izin / Sakit dengan lampiran</li>
+  <li>Input Jadwal Libur pribadi</li>
+  <li>Riwayat absensi &amp; persentase kehadiran</li>
+  <li>Profil peserta &amp; informasi periode PKL</li>
+</ul></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-2" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-compass"></i></span>Navigasi Menu
+            </button>
+          </h2>
+          <div id="att-2" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<p>Menu utama ada di <b>bar bawah</b> layar:</p>
+<ul>
+  <li><b>Home</b> – ringkasan kehadiran, jam Check in/Check out hari ini, status hari ini, dan <i>Feature Quick Access</i>.</li>
+  <li><b>Absen</b> – form absen selfie Masuk / Pulang.</li>
+  <li><b>Izin</b> – pengajuan Izin atau Sakit.</li>
+  <li><b>Riwayat</b> – catatan absen &amp; persentase kehadiran.</li>
+  <li><b>Profil</b> – data diri, panduan ini, dan tombol keluar.</li>
+</ul>
+<p class="mb-0"><b>Jadwal Libur</b> dibuka lewat kartu <i>Jadwal Libur</i> di Quick Access pada halaman Home. Tombol <b>Refresh</b> di bagian atas memuat ulang data terbaru.</p></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-3" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-camera"></i></span>Cara Absen Masuk
+            </button>
+          </h2>
+          <div id="att-3" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<ol class="mb-2">
+  <li>Buka menu <b>Absen</b> (atau tekan kartu <b>Check in</b> di Home).</li>
+  <li>Pilih <b>Mode Absen</b> (Pagi / Siang / WFH sesuai tipe kerja Anda).</li>
+  <li>Pilih <b>Tipe Absen: MASUK</b>.</li>
+  <li>Tekan <b>Buka Kamera Selfie</b>, ambil foto wajah yang jelas.</li>
+  <li>Jika terlambat, isi kolom <b>Keterangan / Alasan</b> (opsional).</li>
+  <li>Tekan <b>Kirim Absen Sekarang</b> dan tunggu notifikasi berhasil.</li>
+</ol>
+<div class="att-note"><i class="fa-solid fa-lightbulb me-1"></i>Pastikan GPS/lokasi HP aktif dan izinkan akses kamera &amp; lokasi pada browser.</div></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-4" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-right-from-bracket"></i></span>Cara Absen Pulang
+            </button>
+          </h2>
+          <div id="att-4" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<ol class="mb-2">
+  <li>Buka menu <b>Absen</b> dan pilih <b>Tipe Absen: PULANG</b>.</li>
+  <li>Ambil foto selfie.</li>
+  <li>Isi <b>Ringkasan Laporan Kegiatan Hari Ini</b> – berisi pekerjaan yang sudah dikerjakan.</li>
+  <li>Tekan <b>Kirim Absen Sekarang</b>.</li>
+</ol>
+<div class="att-note"><i class="fa-solid fa-triangle-exclamation me-1"></i>Absen Pulang wajib dilakukan. Jika lupa, status akan tercatat <b>Belum Pulang</b>.</div></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-5" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-clock"></i></span>Jam Kerja & Mode Absen
+            </button>
+          </h2>
+          <div id="att-5" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<div class="table-responsive"><table class="table table-sm att-table mb-2">
+<thead><tr><th>Mode</th><th>Masuk</th><th>Pulang</th></tr></thead>
+<tbody>
+<tr><td>Shift Pagi / WFH Pagi</td><td>08:15</td><td>16:00</td></tr>
+<tr><td>Shift Siang / WFH Siang</td><td>13:15</td><td>20:00</td></tr>
+</tbody></table></div>
+<p class="mb-1"><b>Tipe Kerja</b> ditentukan oleh Admin:</p>
+<ul class="mb-2">
+  <li><b>Stay Office</b> – hanya Shift Pagi. Hari Sabtu absen Pagi bersifat opsional dan jam pulang 12:00.</li>
+  <li><b>Shift Work</b> – Shift Pagi atau Shift Siang. Pada Sabtu, Minggu, dan tanggal merah tersedia WFH Pagi / WFH Siang.</li>
+  <li><b>Flexibel Work</b> – hanya Shift Pagi, bebas lokasi.</li>
+</ul>
+<p class="mb-0">Masuk setelah jam yang ditentukan dihitung <b>terlambat</b> dan menit keterlambatan tercatat di rekap.</p></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-6" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-location-dot"></i></span>Aturan Lokasi (Radius GPS)
+            </button>
+          </h2>
+          <div id="att-6" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<ul class="mb-2">
+  <li><b>Shift Pagi</b> (Stay Office &amp; Shift Work), Senin–Jumat bukan tanggal merah: wajib berada dalam <b>radius 100 meter</b> dari kantor.</li>
+  <li><b>Shift Siang</b>, <b>WFH</b>, <b>Flexibel Work</b>: bebas lokasi, tanpa pengecekan radius.</li>
+  <li><b>Sabtu, Minggu, tanggal merah</b>: radius dilewati.</li>
+</ul>
+<div class="att-note"><i class="fa-solid fa-lightbulb me-1"></i>Jika absen ditolak karena jarak, dekati lokasi kantor, aktifkan GPS &quot;akurasi tinggi&quot;, lalu coba lagi.</div></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-7" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-file-pen"></i></span>Izin / Sakit
+            </button>
+          </h2>
+          <div id="att-7" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<ol class="mb-2">
+  <li>Buka menu <b>Izin</b>.</li>
+  <li>Pilih kategori <b>IZIN</b> atau <b>SAKIT</b>.</li>
+  <li>Tentukan <b>Tgl Mulai</b> dan <b>Tgl Selesai</b>.</li>
+  <li>Tulis alasan secara lengkap.</li>
+  <li>Unggah <b>lampiran</b> (foto / PDF) berupa surat izin atau surat keterangan sakit.</li>
+  <li>Tekan <b>Kirim Pengajuan</b>.</li>
+</ol>
+<p class="mb-0">Pengajuan <b>otomatis disetujui</b> dan langsung masuk ke rekap absensi. Riwayat pengajuan tampil di bagian bawah halaman.</p></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-8" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-calendar-days"></i></span>Jadwal Libur
+            </button>
+          </h2>
+          <div id="att-8" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<ol class="mb-2">
+  <li>Di Home, tekan kartu <b>Jadwal Libur</b>.</li>
+  <li>Ketuk tanggal pada kalender untuk memilih / membatalkan.</li>
+  <li>Isi keterangan (opsional), lalu tekan <b>Simpan Jadwal Libur</b>.</li>
+</ol>
+<ul class="mb-0">
+  <li>Hanya bisa untuk <b>bulan berjalan</b>.</li>
+  <li>Tanggal harus berada di dalam <b>periode PKL</b> Anda.</li>
+  <li>Otomatis berstatus <b>APPROVED</b>, tanpa persetujuan Admin.</li>
+  <li>Hari libur yang sudah diinput tidak dihitung sebagai &quot;belum absen&quot;.</li>
+</ul></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-9" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>Riwayat & Persentase Kehadiran
+            </button>
+          </h2>
+          <div id="att-9" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<ul class="mb-0">
+  <li>Menu <b>Riwayat</b> menampilkan tanggal, jam masuk, jam pulang, status, dan laporan kegiatan.</li>
+  <li>Kartu <b>Persentase Kehadiran</b> menunjukkan seberapa disiplin Anda selama periode PKL.</li>
+  <li><b>Absen lebih awal</b> (sebelum jam shift) memulihkan persentase yang turun karena hari tidak absen. Bonus tidak bisa ditabung: jika sudah 100%, absen awal tidak menambah cadangan.</li>
+  <li>Bagian <b>Hari wajib belum absen</b> menandai hari kerja yang terlewat; segera absen/ajukan izin agar persentase tidak turun.</li>
+  <li>Tekan <b>Refresh</b> untuk memuat data terbaru.</li>
+</ul></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-10" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-user"></i></span>Profil & Keluar Akun
+            </button>
+          </h2>
+          <div id="att-10" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<p class="mb-0">Menu <b>Profil</b> menampilkan nama, username, asal sekolah/kampus, serta tanggal mulai dan selesai PKL. Setelah selesai memakai aplikasi, tekan <b>Keluar dari Akun</b>, terutama jika memakai perangkat bersama.</p></div>
+          </div>
+        </div>
+        <div class="accordion-item att-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#att-11" aria-expanded="false">
+              <span class="att-icon"><i class="fa-solid fa-screwdriver-wrench"></i></span>Tips & Kendala Umum
+            </button>
+          </h2>
+          <div id="att-11" class="accordion-collapse collapse " data-bs-parent="#attentionAccordion">
+            <div class="accordion-body small">
+<ul class="mb-0">
+  <li><b>Kamera tidak terbuka</b> – izinkan akses kamera pada pengaturan browser.</li>
+  <li><b>Lokasi tidak terbaca</b> – aktifkan GPS &amp; izin lokasi, lalu muat ulang halaman.</li>
+  <li><b>Data tidak muncul</b> – periksa internet, lalu tekan <b>Refresh</b>.</li>
+  <li><b>Salah mode / tipe kerja</b> – hubungi Admin untuk mengubah Tipe Kerja Anda.</li>
+  <li><b>Lupa absen</b> – segera hubungi Admin; jika berhalangan hadir, ajukan <b>Izin/Sakit</b>.</li>
+  <li><b>Jaga kerahasiaan</b> username dan password Anda.</li>
+</ul></div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm w-100 fw-bold" data-bs-dismiss="modal">Saya Mengerti</button>
       </div>
     </div>
   </div>
