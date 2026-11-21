@@ -199,47 +199,130 @@ body {
 }
 
 /* ==========================================
+   RIWAYAT ALL - TAMPILAN
+   ========================================== */
+.riwayat-filter-bar {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px;
+  background: #fff; border: 1px solid #e3e9f5; border-radius: 16px;
+  padding: 12px 14px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(20,40,90,.05);
+}
+.riwayat-filter-item { display: flex; flex-direction: column; gap: 3px; min-width: 150px; }
+.riwayat-filter-item.riwayat-filter-search { flex: 1 1 220px; }
+.riwayat-filter-item label { font-size: .68rem; font-weight: 700; color: #5b6b8c; letter-spacing: .04em; text-transform: uppercase; }
+
+#print-section .print-header { display: none; }
+.riwayat-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.riwayat-stat {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px;
+  background: #fff; border: 1px solid #e3e9f5; box-shadow: 0 4px 14px rgba(20,40,90,.05);
+  border-left-width: 5px;
+}
+.riwayat-stat > i { font-size: 1.5rem; }
+.riwayat-stat span { display: block; font-size: 1.65rem; font-weight: 800; line-height: 1.1; }
+.riwayat-stat small { color: #5b6b8c; font-weight: 600; }
+.riwayat-stat.stat-hadir { border-left-color: #12a878; } .riwayat-stat.stat-hadir > i, .riwayat-stat.stat-hadir span { color: #0b7a58; }
+.riwayat-stat.stat-izin { border-left-color: #f2a007; } .riwayat-stat.stat-izin > i, .riwayat-stat.stat-izin span { color: #b57600; }
+.riwayat-stat.stat-telat { border-left-color: #e8590c; } .riwayat-stat.stat-telat > i, .riwayat-stat.stat-telat span { color: #c2410c; }
+.riwayat-stat.stat-alpa { border-left-color: #dc3545; } .riwayat-stat.stat-alpa > i, .riwayat-stat.stat-alpa span { color: #b4232f; }
+
+.riwayat-section-title { font-weight: 800; color: #172b4d; margin: 0 0 8px; font-size: .95rem; }
+.riwayat-table-wrap { border: 1px solid #e3e9f5; border-radius: 14px; background: #fff; max-height: 70vh; overflow: auto; }
+.riwayat-table { --bs-table-bg: transparent; margin: 0; }
+.riwayat-table thead th {
+  position: sticky; top: 0; z-index: 2; background: #172b4d; color: #fff;
+  font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; font-weight: 700;
+  padding: 10px 10px; border: 0; white-space: nowrap;
+}
+.riwayat-table tbody td { padding: 9px 10px; border-color: #eef2fa; vertical-align: middle; }
+.riwayat-table tbody tr:nth-child(even) { background: #f7f9fe; }
+.riwayat-table tbody tr:hover { background: #edf3ff; }
+.riwayat-table tfoot td { background: #eaf0ff; font-weight: 800; padding: 10px; border-top: 2px solid #172b4d; color: #172b4d; }
+.riwayat-sub { font-size: .7rem; color: #7a88a6; margin-top: 1px; }
+.riwayat-note { font-size: .72rem; color: #7a88a6; margin-top: 6px; }
+
+.num-pill { display: inline-block; min-width: 34px; padding: 2px 10px; border-radius: 999px; font-weight: 800; font-size: .82rem; }
+.pill-hadir { background: #d3f9e8; color: #0b7a58; }
+.pill-izin { background: #fff0cc; color: #8a5a00; }
+.pill-telat { background: #ffe3d1; color: #b13a05; }
+.pill-awal { background: #dbeafe; color: #1c5db4; }
+.pill-alpa { background: #ffdde1; color: #a61b29; }
+.pct-badge { display: inline-block; min-width: 46px; padding: 2px 8px; border-radius: 8px; font-weight: 800; font-size: .78rem; }
+.pct-good { background: #d3f9e8; color: #0b7a58; }
+.pct-mid { background: #fff0cc; color: #8a5a00; }
+.pct-low { background: #ffdde1; color: #a61b29; }
+.pct-none { background: #e9edf5; color: #6b7894; }
+
+@media (max-width: 767px) {
+  .riwayat-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .riwayat-filter-item { min-width: 130px; flex: 1 1 130px; }
+}
+
+/* ==========================================
+   USER: PERSENTASE KEHADIRAN & LUPA ABSEN
+   ========================================== */
+.my-recap-card { border: 1px solid #e3e9f5; border-radius: 16px; padding: 14px; background: linear-gradient(180deg,#f7faff,#fff); }
+.my-recap-head { display: flex; align-items: center; gap: 14px; }
+.my-recap-ring { flex: 0 0 auto; width: 86px; height: 86px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 6px solid currentColor; background: #fff; font-weight: 800; line-height: 1.05; }
+.my-recap-ring span { font-size: 1.2rem; }
+.my-recap-ring small { font-size: .6rem; font-weight: 700; opacity: .8; }
+.my-recap-ring.pct-good, .my-recap-mini-pct.pct-good { color: #0b7a58; background: #fff; }
+.my-recap-ring.pct-mid, .my-recap-mini-pct.pct-mid { color: #b57600; background: #fff; }
+.my-recap-ring.pct-low, .my-recap-mini-pct.pct-low { color: #b4232f; background: #fff; }
+.my-recap-ring.pct-none, .my-recap-mini-pct.pct-none { color: #6b7894; background: #fff; }
+.my-recap-info { flex: 1 1 auto; min-width: 0; }
+.my-recap-bar { height: 8px; border-radius: 99px; background: #e9edf5; margin-top: 8px; overflow: hidden; }
+.my-recap-bar i { display: block; height: 100%; border-radius: 99px; background: currentColor; }
+.my-recap-bar i.pct-good { background: #12a878; } .my-recap-bar i.pct-mid { background: #f2a007; } .my-recap-bar i.pct-low { background: #dc3545; } .my-recap-bar i.pct-none { background: #b6c0d6; }
+.my-recap-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; text-align: center; }
+.my-recap-grid > div { background: #fff; border: 1px solid #eef2fa; border-radius: 12px; padding: 8px 4px; }
+.my-recap-grid b { display: block; font-size: 1.15rem; }
+.my-recap-grid small { font-size: .65rem; color: #5b6b8c; font-weight: 600; }
+.c-awal { color: #1c6fd1; } .c-hadir { color: #0b7a58; } .c-izin { color: #b57600; } .c-telat { color: #c2410c; } .c-alpa { color: #b4232f; }
+.my-missed-box { border: 1px solid #ffd5da; background: #fff6f7; border-radius: 14px; padding: 10px 12px; }
+.my-missed-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px dashed #f1c4ca; font-size: .8rem; }
+.my-missed-row:first-child { border-top: 0; }
+.my-recap-mini { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 12px; border-radius: 16px; background: #fff; border: 1px solid #e3e9f5; box-shadow: 0 4px 14px rgba(20,40,90,.06); cursor: pointer; }
+.my-recap-mini-pct { flex: 0 0 auto; min-width: 62px; text-align: center; font-weight: 800; font-size: 1.15rem; padding: 8px 6px; border-radius: 12px; border: 2px solid currentColor; }
+.my-recap-mini-text { flex: 1 1 auto; display: flex; flex-direction: column; font-size: .85rem; }
+.my-recap-mini-text small { color: #7a88a6; }
+
+/* ==========================================
    PENGATURAN KHUSUS CETAK / PRINT
    ========================================== */
+@page { size: A4 landscape; margin: 10mm; }
 @media print {
-  body * {
-    visibility: hidden;
-  }
+  body * { visibility: hidden; }
 
   #print-section, #print-section * {
     visibility: visible;
-  }
-
-  #print-section {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 10px;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-  }
-
-  th, td {
-    padding: 6px 8px !important;
-    font-size: 11pt !important;
-    color: #aaa7a7 !important;
-  }
-
-  .table-dark {
-    background-color: #f1f1f1 !important;
-    color: #ffffff !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  #print-section {
+    position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0;
+  }
+
+  .no-print { display: none !important; }
+
+  #print-section .print-header { display: block; margin-bottom: 10px; border-bottom: 2px solid #172b4d; padding-bottom: 6px; }
+  #print-section .print-header h4 { margin: 0; font-weight: 800; color: #000; }
+  #print-section .print-sub { font-size: 10pt; color: #333; }
+
+  .riwayat-stat-grid { gap: 8px; margin-bottom: 12px; }
+  .riwayat-stat { box-shadow: none; padding: 8px 10px; break-inside: avoid; }
+  .riwayat-stat span { font-size: 16pt; }
+  .riwayat-table-wrap { max-height: none !important; overflow: visible !important; border: 0; border-radius: 0; }
+  .riwayat-section-title { color: #000; margin-top: 10px; }
+  .riwayat-note { color: #333; }
+
+  table { width: 100% !important; border-collapse: collapse !important; }
+  .riwayat-table thead { display: table-header-group; }
+  .riwayat-table tr { break-inside: avoid; }
+  .riwayat-table thead th { position: static; background: #172b4d !important; color: #fff !important; font-size: 8.5pt !important; padding: 5px 6px !important; border: 1px solid #172b4d !important; }
+  .riwayat-table tbody td { font-size: 9pt !important; color: #000 !important; padding: 4px 6px !important; border: 1px solid #c9d2e6 !important; }
+  .riwayat-table tfoot td { font-size: 9pt !important; color: #000 !important; border: 1px solid #172b4d !important; }
+  .riwayat-sub { color: #444 !important; font-size: 7.5pt; }
 }
 
 /* Notifikasi interaktif */
@@ -686,3 +769,115 @@ body.admin-mode .app-notifications { position: fixed; }
 .holiday-calendar-day.is-national-holiday:not(.is-selected)::after { content: ""; display: block; width: 4px; height: 4px; border-radius: 50%; background: #dc3545; margin: -2px auto 0; }
 .holiday-calendar-day:disabled { visibility: hidden; }
 .holiday-selected-chip { background: #e7f1ff; color: #084298; border-radius: 20px; padding: 4px 9px; font-size: .72rem; font-weight: 600; }
+
+
+/* ===== Admin: kalender hari libur nasional ===== */
+.admin-holiday-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(260px, .85fr);
+  gap: 16px;
+  align-items: start;
+}
+.admin-holiday-calendar-panel,
+.admin-holiday-detail-panel {
+  background: #fff;
+  border: 1px solid #e9edf3;
+  border-radius: 14px;
+  padding: 16px;
+  min-width: 0;
+}
+.admin-holiday-weekdays,
+.admin-holiday-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
+}
+.admin-holiday-weekdays span {
+  text-align: center;
+  padding: 7px 0;
+  color: #6c757d;
+  font-size: .75rem;
+  font-weight: 700;
+}
+.admin-holiday-day {
+  position: relative;
+  min-width: 0;
+  min-height: 62px;
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #253247;
+  font-weight: 650;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 10px 4px;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.admin-holiday-day:hover {
+  border-color: #8bb8f8;
+  background: #eef5ff;
+}
+.admin-holiday-day.is-weekend {
+  color: #7c8798;
+  background: #f3f5f8;
+}
+.admin-holiday-day.is-holiday {
+  color: #b42332;
+  border-color: #f2b8bf;
+  background: #fff1f2;
+}
+.admin-holiday-day.is-holiday i {
+  position: absolute;
+  bottom: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #dc3545;
+}
+.admin-holiday-day.is-today {
+  outline: 2px solid #91baff;
+  outline-offset: 1px;
+}
+.admin-holiday-day.is-selected {
+  color: #fff;
+  background: #1769d2;
+  border-color: #1769d2;
+  box-shadow: 0 3px 9px rgba(23,105,210,.2);
+}
+.admin-holiday-day.is-selected i { background: #fff; }
+.admin-holiday-empty { min-height: 62px; }
+.admin-holiday-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  background: #aab3c0;
+}
+.admin-holiday-legend-dot.is-holiday { background: #dc3545; }
+.admin-holiday-legend-dot.is-weekend { background: #9aa4b2; }
+.admin-holiday-legend-dot.is-today { background: #1769d2; }
+@media (max-width: 767.98px) {
+  .admin-holiday-layout { grid-template-columns: 1fr; }
+  .admin-holiday-calendar-panel, .admin-holiday-detail-panel { padding: 12px; }
+  .admin-holiday-weekdays, .admin-holiday-grid { gap: 4px; }
+  .admin-holiday-day { min-height: 44px; border-radius: 7px; padding-top: 7px; font-size: .85rem; }
+  .admin-holiday-empty { min-height: 44px; }
+}
+
+
+/* ===== ATTENTION: PANDUAN APLIKASI ===== */
+.btn-attention { background: #fff8e6; color: #b45309; border: 1.5px solid #f5c26b; }
+.btn-attention:hover, .btn-attention:active { background: #ffefc2; color: #92400e; border-color: #f0a93a; }
+.att-modal { border: 0; border-radius: 18px; overflow: hidden; }
+.att-header { background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; border-bottom: 0; align-items: flex-start; }
+.att-item .accordion-button { font-weight: 700; font-size: .85rem; gap: 10px; padding: 14px 16px; }
+.att-item .accordion-button:not(.collapsed) { background: #eff5ff; color: #1d4ed8; box-shadow: none; }
+.att-item .accordion-button:focus { box-shadow: none; }
+.att-icon { width: 30px; height: 30px; border-radius: 9px; background: #e0ebff; color: #1d4ed8; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; }
+.att-item .accordion-body { line-height: 1.55; color: #374151; padding: 14px 16px 16px; }
+.att-item .accordion-body ol, .att-item .accordion-body ul { padding-left: 1.2rem; }
+.att-item .accordion-body li { margin-bottom: 4px; }
+.att-note { background: #fff8e6; border-left: 3px solid #f59e0b; color: #92400e; padding: 8px 10px; border-radius: 8px; font-size: .78rem; }
+.att-table th, .att-table td { font-size: .78rem; }
